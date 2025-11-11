@@ -1,5 +1,6 @@
 package Controller;
 
+import DAO.StaffTrackDAO;
 import Model.Staff;
 import Model.StaffTracker;
 
@@ -31,8 +32,7 @@ public class SessionTracker {
     public static void endSession(){
         currentTracker.setTimeOut(LocalDateTime.now());
         calculateMinutes();
-        //TODO: DAO.upload
-        //DAO.upload (pseudocode not yet developed)
+        StaffTrackDAO.uploadSession(currentTracker);
         printSession(currentTracker);
         resetTracker();
     }

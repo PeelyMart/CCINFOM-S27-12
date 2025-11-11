@@ -1,3 +1,4 @@
+import java.math.BigDecimal;
 import java.util.Date;
 
 public class StaffTracker {
@@ -5,19 +6,19 @@ public class StaffTracker {
     private Date date;
     private Date timeIn;
     private Date timeOut;
-    private int sessionMinutes;
+    private BigDecimal hoursWorked;
 
     // Constructor
     public StaffTracker() {
         
     }
 
-    public StaffTracker(int staffId, Date date, Date timeIn, Date timeOut, int sessionMinutes) {
+    public StaffTracker(int staffId, Date date, Date timeIn, Date timeOut, BigDecimal hoursWorked) {
         this.staffId = staffId;
         this.date = date;
         this.timeIn = timeIn;
         this.timeOut = timeOut;
-        this.sessionMinutes = sessionMinutes;
+        this.hoursWorked = hoursWorked;
     }
 
     // Getters
@@ -37,8 +38,8 @@ public class StaffTracker {
         return timeOut;
     }
 
-    public int getSessionMinutes() {
-        return sessionMinutes;
+    public BigDecimal getHoursWorked() {
+        return hoursWorked;
     }
 
     // Setters
@@ -58,7 +59,7 @@ public class StaffTracker {
         this.timeOut = timeOut;
     }
 
-    public void setSessionMinutes(int sessionMinutes) {
-        this.sessionMinutes = sessionMinutes;
+    public void setHoursWorked(BigDecimal hoursWorked) {
+        this.hoursWorked = hoursWorked;
     }
 }

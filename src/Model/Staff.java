@@ -1,70 +1,59 @@
 package Model;
 
 public class Staff {
-    private int staffId;
-    private String name;
-    private String email;
-    private String contact;
-    private String position;
-    private String managerPin;
+    private int staff_id;
+    private int staff_pin;
+    private String first_name;
+    private String last_name;
+    private String contact_number;
+
+
+
 
     // Constructor
-    public Staff(int staffId, String name, String email, String contact, String position, String managerPin) {
-        this.staffId = staffId;
-        this.name = name;
-        this.email = email;
-        this.contact = contact;
-        this.position = position;
-        this.managerPin = managerPin;
+    public Staff(int staffId, int staff_pin, String first_name, String last_name, String contact_number) {
+        this.staff_id = staffId;
+        this.staff_pin = staff_pin;
+        this.first_name = first_name;
+        this.last_name = last_name;
+        this.contact_number = contact_number;
     }
 
     // Getters
     public int getStaffId() {
-        return staffId;
+        return staff_id;
     }
 
-    public String getName() {
-        return name;
+    public int getStaffPin() {
+        return staff_pin;
     }
 
-    public String getEmail() {
-        return email;
+    public String getFirstName() {
+        return first_name;
     }
 
-    public String getContact() {
-        return contact;
+    public String getLastName() {
+        return last_name;
     }
 
-    public String getPosition() {
-        return position;
+
+    public String getContactNumber() {
+        return contact_number;
     }
 
-    public String getManagerPin() {
-        return managerPin;
-    }
+
 
     // Setters
-    public void setStaffId(int staffId) {
-        this.staffId = staffId;
+    public void changeFirstName(String firstName){
+        this.first_name = firstName;
     }
-
-    public void setName(String name) {
-        this.name = name;
+    public void changeLastName(String lastName){
+        this.last_name = lastName;
     }
-
-    public void setEmail(String email) {
-        this.email = email;
+    public void changePin(int newPin){
+        this.staff_pin = newPin;
     }
-
-    public void setContact(String contact) {
-        this.contact = contact;
-    }
-
-    public void setPosition(String position) {
-        this.position = position;
-    }
-
-    public void setManagerPin(String managerPin) {
-        this.managerPin = managerPin;
+    public void changeContactNumber(String contactNumber){
+        this.contact_number = contactNumber;
     }
 }

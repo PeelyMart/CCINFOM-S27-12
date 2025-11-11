@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="JavFXLib">
+    <CLASSES>
+      <root url="file://$PROJECT_DIR$/lib/JavFXLib" />
+    </CLASSES>
+    <JAVADOC />
+    <NATIVE>
+      <root url="file://$PROJECT_DIR$/lib/JavFXLib" />
+    </NATIVE>
+    <SOURCES />
+    <jarDirectory url="file://$PROJECT_DIR$/lib/JavFXLib" recursive="false" />
+  </library>
+</component>

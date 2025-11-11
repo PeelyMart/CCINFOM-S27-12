@@ -1,12 +1,16 @@
 package DAO;
 
+import Model.StaffTracker;
+
 import java.math.BigDecimal;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Date;
 
-public class stafftrackerDAO {
 
+
+public class stafftrackerDAO {
+/*
     public boolean addStaffTracker(StaffTracker tracker) {
         String sql = "INSERT INTO staff_tracker (staff_id, date, time_in, time_out, hours_worked) VALUES (?, ?, ?, ?, ?)";
         try (Connection conn = DB.getConnection();
@@ -103,4 +107,6 @@ public class stafftrackerDAO {
         }
         return trackers;
     }
+
+ */
 }

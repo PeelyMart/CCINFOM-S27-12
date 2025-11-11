@@ -3,7 +3,7 @@ package DAO;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
-
+/*
 public class orderitemDAO {
 
     public boolean addOrderItem(OrderItem orderItem) {
@@ -121,3 +121,4 @@ public class orderitemDAO {
         return orderItems;
     }
 }
+*/

@@ -13,7 +13,7 @@ public class StaffDB{
     public static Staff findById(int id) {
         String query = "SELECT *  FROM staff WHERE staff_id = ?";
 
-        try (Connection conn = Database.getConnection(); //joint try parameter
+        try (Connection conn = DB.getConnection(); //joint try parameter
              PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setInt(1, id);//replaces the '?' with the id
             ResultSet rs = stmt.executeQuery();

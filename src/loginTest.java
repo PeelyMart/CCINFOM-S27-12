@@ -1,3 +1,4 @@
+import Controller.SessionTracker;
 import Controller.UserService;
 import DAO.DB;
 import Model.Staff;
@@ -42,6 +43,7 @@ public class loginTest {
                         int loginResult = UserService.logIn(id, pin);
                         if (loginResult == 0) {
                             System.out.println("You are logged in as " + UserService.getCurrentUser().getFirstName());
+                            SessionTracker.startSession(UserService.getCurrentUser());
                         } else if (loginResult == 1) {
                             System.out.println("User not found.");
                         } else if (loginResult == 2) {
@@ -50,6 +52,7 @@ public class loginTest {
                     }
                     case 2 -> { // Logout
                         UserService.logOut();
+                        SessionTracker.endSession();
                         System.out.println("You have logged out.");
                     }
                     case 0 -> programRunning = false; // Exit

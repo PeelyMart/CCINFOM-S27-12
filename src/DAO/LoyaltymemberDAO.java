@@ -3,7 +3,7 @@ package DAO;
 import java.sql.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
-
+/*
 public class loyaltymemberDAO {
 
     public boolean addLoyaltyMember(LoyaltyMember member) {
@@ -14,7 +14,7 @@ public class loyaltymemberDAO {
 
             stmt.setString(1, member.getName());
             stmt.setString(2, member.getContact());
-            stmt.setDate(3, Date.valueOf(member.getJoinDate())); 
+            stmt.setDate(3, Date.valueOf(member.getJoinDate()));
             stmt.setInt(4, member.getPoints());
             stmt.setString(5, member.getStatus());
 
@@ -109,16 +109,16 @@ public class loyaltymemberDAO {
             while (rs.next()) {
                 LoyaltyMember m = new LoyaltyMember();
 
-                    m.setCustomerId(rs.getInt("customer_id"));
-                    m.setName(rs.getString("name"));
-                    m.setContact(rs.getString("contact"));
-                    m.setJoinDate(rs.getDate("join_date").toLocalDate());
-                    m.setPoints(rs.getInt("points"));
-                    m.setStatus(rs.getString("status"));
+                m.setCustomerId(rs.getInt("customer_id"));
+                m.setName(rs.getString("name"));
+                m.setContact(rs.getString("contact"));
+                m.setJoinDate(rs.getDate("join_date").toLocalDate());
+                m.setPoints(rs.getInt("points"));
+                m.setStatus(rs.getString("status"));
 
-                    members.add(m);
+                members.add(m);
             }
-            
+
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -130,14 +130,16 @@ public class loyaltymemberDAO {
         String sql = "ALTER TABLE loyalty_members AUTO_INCREMENT = 1";
 
         try (Connection conn = DB.getConnection();
-            PreparedStatement stmt = conn.prepareStatement(sql)) {
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.execute();
             return true;
 
         } catch (SQLException e) {
             e.printStackTrace();
-    }
+        }
 
         return false;
     }
 }
+
+*/

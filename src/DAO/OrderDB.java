@@ -1,9 +1,12 @@
 package DAO;
 
+import Model.Order;
+import Model.OrderItem;
 import Model.OrderStatus;
 
 import java.math.BigDecimal;
 import java.sql.*;
+import java.util.List;
 
 public class OrderDB {
 
@@ -41,7 +44,60 @@ public class OrderDB {
         return -1;
     }
 
-    public static void getOrderHeader(int headerId){
-        String query =  "SELECT FROM order_header WHERE id = ";
+    public static Order getOrderHeader(int headerId) {
+        String headerQuery = "SELECT * FROM order_header WHERE order_id = ?";
+        String itemsQuery = "SELECT * FROM order_item WHERE order_id = ?";
+
+        try (Connection conn = DB.getConnection();
+             PreparedStatement headerStmt = conn.prepareStatement(headerQuery);
+             PreparedStatement itemsStmt = conn.prepareStatement(itemsQuery)) {
+
+            // Fetch header
+            headerStmt.setInt(1, headerId);
+            ResultSet rsHeader = headerStmt.executeQuery();
+
+            if (rsHeader.next()) {
+                int orderId = rsHeader.getInt("order_id");
+                int tableId = rsHeader.getInt("table_id");
+                int staffId = rsHeader.getInt("staff_id");
+                Timestamp ts = rsHeader.getTimestamp("order_time");
+                BigDecimal totalCost = rsHeader.getBigDecimal("total_cost");
+                String statusStr = rsHeader.getString("status");
+
+                Order order = new Order(orderId, tableId, staffId, ts.toLocalDateTime(), totalCost,
+                        OrderStatus.fromString(statusStr));
+
+                // Fetch order items
+                itemsStmt.setInt(1, orderId);
+                ResultSet rsItems = itemsStmt.executeQuery();
+
+                List<OrderItem> items = new java.util.ArrayList<>();
+                while (rsItems.next()) {
+                    int orderItemId = rsItems.getInt("order_item_id");
+                    int menuId = rsItems.getInt("menu_id");
+                    int quantity = rsItems.getInt("quantity");
+                    double subtotal = rsItems.getDouble("subtotal");
+
+                    boolean active = rsItems.getBoolean("is_active"); // reads 0/1 as boolean
+                    String itemStatus = active ? "active" : "inactive"; // map to String for model
+
+                    OrderItem item = new OrderItem(orderItemId, orderId, menuId, quantity, subtotal, itemStatus);
+                    items.add(item);
+                }
+
+                // Only set the list if items exist
+                if (!items.isEmpty()) {
+                    order.setOrderItems(items);
+                }
+
+                return order;
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return null;
     }
+
 }

@@ -1,10 +1,15 @@
 package Controller;
 
+import DAO.OrderDB;
 import Model.Order;
 
 public class OrderController {
 
 
+
+    public static void openOrder(int tableId, int staffId) {
+        OrderDB.newOrder(tableId, staffId);
+    };
 
 
 

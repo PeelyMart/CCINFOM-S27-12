@@ -21,14 +21,13 @@ public class Order {
         
     }
 
-    public Order(int orderId, int tableId, int staffId, LocalDateTime orderTime, BigDecimal totalCost, OrderStatus status, List<OrderItem> orderItems) {
+    public Order(int orderId, int tableId, int staffId, LocalDateTime orderTime, BigDecimal totalCost, OrderStatus status) {
         this.orderId = orderId;
         this.tableId = tableId;
         this.staffId = staffId;
         this.orderTime = orderTime;
         this.totalCost = totalCost;
         this.status = status;
-        this.orderItems = orderItems;
     }
 
     // Getters

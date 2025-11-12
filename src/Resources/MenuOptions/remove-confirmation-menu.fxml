@@ -16,7 +16,7 @@
             </content>
         </ScrollPane>
       <Text fill="WHITE" layoutX="52.0" layoutY="75.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Are you sure that you want to remove this entry?" />
-      <Button fx:id="yesRemoveButton" layoutX="339.0" layoutY="58.0" mnemonicParsing="false" onAction="#yesRemoveButtonClick" prefHeight="30.0" prefWidth="65.0" text="Yes" />
-      <Button fx:id="noRemoveButton" layoutX="447.0" layoutY="58.0" mnemonicParsing="false" onAction="#noRemoveButtonClick" prefHeight="30.0" prefWidth="65.0" text="No" />
+      <Button fx:id="yesRemoveMenuButton" layoutX="339.0" layoutY="58.0" mnemonicParsing="false" onAction="#yesRemoveMenuButtonClick" prefHeight="30.0" prefWidth="65.0" text="Yes" />
+      <Button fx:id="noRemoveMenuButton" layoutX="447.0" layoutY="58.0" mnemonicParsing="false" onAction="#noRemoveMenuButtonClick" prefHeight="30.0" prefWidth="65.0" text="No" />
     </children>
 </Pane>

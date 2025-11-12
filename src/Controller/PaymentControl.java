@@ -6,7 +6,6 @@ public class PaymentControl {
 
     public static void initiatePayment(Order currentOrder){
 
-
     }
 
 

@@ -1,5 +1,8 @@
 package Model;
 
+import javafx.scene.layout.BorderRepeat;
+
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -9,8 +12,8 @@ public class Order {
     private int tableId;
     private int staffId;
     private LocalDateTime orderTime; 
-    private double totalCost;          
-    private String status;
+    private BigDecimal totalCost;
+    private OrderStatus status;
     private List<OrderItem> orderItems;
 
     // Constructors
@@ -18,8 +21,7 @@ public class Order {
         
     }
 
-    public Order(int orderId, int tableId, int staffId, LocalDateTime orderTime, double totalCost,
-                 String status, List<OrderItem> orderItems) {
+    public Order(int orderId, int tableId, int staffId, LocalDateTime orderTime, BigDecimal totalCost, OrderStatus status, List<OrderItem> orderItems) {
         this.orderId = orderId;
         this.tableId = tableId;
         this.staffId = staffId;
@@ -46,11 +48,11 @@ public class Order {
         return orderTime;
     }
 
-    public double getTotalCost() {
+    public BigDecimal getTotalCost() {
         return totalCost;
     }
 
-    public String getStatus() {
+    public OrderStatus getStatus() {
         return status;
     }
 
@@ -76,11 +78,11 @@ public class Order {
         this.orderTime = orderTime;
     }
 
-    public void setTotalCost(double totalCost) {
+    public void setTotalCost(BigDecimal totalCost) {
         this.totalCost = totalCost;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(OrderStatus status) {
         this.status = status;
     }
 

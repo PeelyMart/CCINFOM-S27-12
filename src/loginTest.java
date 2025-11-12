@@ -1,5 +1,3 @@
-package View;
-
 import Controller.SessionTracker;
 import Controller.UserService;
 import DAO.DB;

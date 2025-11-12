@@ -1,4 +1,4 @@
-package View.Resources;
+package View;
 
 public class TestFrame {
 }

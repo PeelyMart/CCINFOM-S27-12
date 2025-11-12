@@ -2,7 +2,7 @@ package DAO;
 
 import java.sql.*;
 import java.util.ArrayList;
-
+/*
 public class menuitemDAO {
 
     public boolean addMenuItem(MenuItem menuItem) {
@@ -75,7 +75,7 @@ public class menuitemDAO {
     public boolean deleteMenuItem(int menuId) {
         String sql = "DELETE FROM menu_items WHERE menu_id = ?";
         try (Connection conn = DB.getConnection();
-            PreparedStatement stmt = conn.prepareStatement(sql)) {
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setInt(1, menuId);
             return stmt.executeUpdate() > 0;
@@ -97,14 +97,14 @@ public class menuitemDAO {
 
             while (rs.next()) {
                 MenuItem i = new MenuItem();
-                
-                    i.setMenuId(rs.getInt("menu_id"));
-                    i.setMenuName(rs.getString("menu_name"));
-                    i.setDescription(rs.getString("description"));
-                    i.setPrice(rs.getDouble("price"));
-                    i.setStatus(rs.getBoolean("status"));
 
-                    menuItems.add(i);
+                i.setMenuId(rs.getInt("menu_id"));
+                i.setMenuName(rs.getString("menu_name"));
+                i.setDescription(rs.getString("description"));
+                i.setPrice(rs.getDouble("price"));
+                i.setStatus(rs.getBoolean("status"));
+
+                menuItems.add(i);
             }
 
         } catch (SQLException e) {
@@ -117,14 +117,16 @@ public class menuitemDAO {
         String sql = "ALTER TABLE loyalty_members AUTO_INCREMENT = 1";
 
         try (Connection conn = DB.getConnection();
-            PreparedStatement stmt = conn.prepareStatement(sql)) {
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.execute();
             return true;
 
         } catch (SQLException e) {
             e.printStackTrace();
-    }
+        }
 
         return false;
     }
 }
+
+*/

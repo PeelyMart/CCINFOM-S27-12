@@ -2,7 +2,7 @@ package DAO;
 
 import java.sql.*;
 import java.util.ArrayList;
-
+/*
 public class tableDAO {
 
     public boolean addTable(Table table) {
@@ -101,8 +101,8 @@ public class tableDAO {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        
+
         return tables;
     }
 }
-
+*/

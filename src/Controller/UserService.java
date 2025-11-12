@@ -32,6 +32,8 @@ public class UserService {
         isLoggedIn = false;
     }
 
+
+    //TODO: if the system detects an exit withoput logout find a way to safely logout for proper session keeping
     public static Staff getCurrentUser(){
         return current_user;
     }

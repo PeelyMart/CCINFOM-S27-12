@@ -3,7 +3,7 @@ package DAO;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-
+/*
 public class reservationDAO {
 
     public boolean addReservation(Reservations reservation) {
@@ -96,12 +96,12 @@ public class reservationDAO {
 
             while (rs.next()) {
                 Reservations r = new Reservations(
-                    rs.getInt("request_id"),
-                    rs.getInt("table_id"),
-                    rs.getString("reserve_name"),
-                    rs.getTimestamp("date_and_time").toLocalDateTime(),
-                    rs.getDouble("subtotal"),
-                    rs.getBoolean("is_active")
+                        rs.getInt("request_id"),
+                        rs.getInt("table_id"),
+                        rs.getString("reserve_name"),
+                        rs.getTimestamp("date_and_time").toLocalDateTime(),
+                        rs.getDouble("subtotal"),
+                        rs.getBoolean("is_active")
                 );
                 reservations.add(r);
             }
@@ -110,4 +110,4 @@ public class reservationDAO {
         }
         return reservations;
     }
-}
+}*/

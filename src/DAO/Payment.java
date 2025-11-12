@@ -3,7 +3,7 @@ package DAO;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-
+/*
 public class paymentDAO {
 
     public boolean addPayment(Payment payment) {
@@ -135,10 +135,10 @@ public class paymentDAO {
                 p.setPaymentMethod(rs.getString("payment_method"));
                 p.setPaymentDate(rs.getTimestamp("payment_date").toLocalDateTime());
                 p.setStaffId(rs.getInt("staff_id"));
-                
+
                 Integer loyalCustomerId = rs.getObject("loyal_customer_id") != null ? rs.getInt("loyal_customer_id") : null;
                 p.setLoyalCustomerId(loyalCustomerId);
-                
+
                 p.setUnknownCustomerName(rs.getString("unknown_customer_name"));
                 p.setActive(rs.getBoolean("is_active"));
 
@@ -183,3 +183,4 @@ public class paymentDAO {
         return payments;
     }
 }
+*/

@@ -8,7 +8,7 @@
 <?import javafx.scene.text.Font?>
 <?import javafx.scene.text.Text?>
 
-<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="CONTROLLER_NAME">
+<AnchorPane fx:controller="UserInterface.LoginUI" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" prefHeight="400.0" prefWidth="600.0">
     <children>
         <Pane layoutX="308.0" prefHeight="399.0" prefWidth="292.0">
             <children>
@@ -17,9 +17,9 @@
                         <Font name="Avenir Book" size="31.0" />
                     </font>
                 </Text>
-                <TextField layoutX="56.0" layoutY="146.0" prefHeight="26.0" prefWidth="179.0" promptText="Username" />
-                <TextField layoutX="56.0" layoutY="206.0" prefHeight="26.0" prefWidth="179.0" promptText="Password" />
-                <Button layoutX="59.0" layoutY="259.0" mnemonicParsing="false" prefHeight="32.0" prefWidth="171.0" style="-fx-background-radius: 50; -fx-background-color: #2f3961;" text="Log In" textFill="WHITE" />
+                <TextField fx:id="usernameField" layoutX="56.0" layoutY="146.0" prefHeight="26.0" prefWidth="179.0" promptText="Username" />
+                <TextField fx:id="passwordField" layoutX="56.0" layoutY="206.0" prefHeight="26.0" prefWidth="179.0" promptText="Password" />
+                <Button fx:id="loginButton" layoutX="59.0" layoutY="259.0" mnemonicParsing="false" prefHeight="32.0" prefWidth="171.0" style="-fx-background-radius: 50; -fx-background-color: #2f3961;" text="Log In" textFill="WHITE" />
             </children>
         </Pane>
         <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0">

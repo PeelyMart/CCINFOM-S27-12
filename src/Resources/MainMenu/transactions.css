@@ -1,7 +1,7 @@
 /* ROOT BACKGROUND */
 .root {
     -fx-background-color: #191f36; /* dark main background */
-    -fx-background-image: url("file:C:/Users/skypa/OneDrive/Documents/GitHub/CCINFOM-Database-Application/src/Resources/bgwhite.png");
+    -fx-background-image: url("file:/Resources/bgwhite.png");
     -fx-background-size: cover;
     -fx-background-repeat: no-repeat;
     -fx-background-position: center;

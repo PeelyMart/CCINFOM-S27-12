@@ -40,6 +40,7 @@ public class LoginUI {
         loginButton.setOnAction(e -> handleLogin());
     }
 
+    @FXML
     private void handleLogin() {
         String username = usernameField.getText().trim();
         String password = passwordField.getText().trim();

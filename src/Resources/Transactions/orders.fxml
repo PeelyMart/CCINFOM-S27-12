@@ -33,7 +33,7 @@
          <font>
             <Font size="17.0" />
          </font></Button>
-      <Text fill="WHITE" layoutX="32.0" layoutY="65.0" strokeType="OUTSIDE" strokeWidth="0.0" text="📜 MENU">
+      <Text fill="WHITE" layoutX="32.0" layoutY="65.0" strokeType="OUTSIDE" strokeWidth="0.0" text="📜 ORDER">
          <font>
             <Font name="Verdana Bold" size="40.0" />
          </font></Text>

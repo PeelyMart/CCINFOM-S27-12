@@ -2,31 +2,50 @@ package DAO;
 
 import java.sql.*;
 import java.util.ArrayList;
-/*
-public class tableDAO {
+import Model.Table;
 
-    public boolean addTable(Table table) {
-        String sql = "INSERT INTO tables (capacity, table_status) VALUES (?, ?)";
+public class TableDAO {
+    /**
+     * Adds a new table with the given capacity.
+     * The table will automatically be marked as available.
+     *
+     * @param capacity The seating capacity of the table.
+     * @return A Table object representing the new row, or null if insertion failed.
+     */
+    public static Table addTable(int capacity) {
+        String sql = "INSERT INTO tables (capacity, is_available) VALUES (?, ?)";
+
         try (Connection conn = DB.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
-            stmt.setInt(1, table.getCapacity());
-            stmt.setString(2, table.getTableStatus());
+            stmt.setInt(1, capacity);
+            stmt.setBoolean(2, true); // table is automatically "open"
 
             int affectedRows = stmt.executeUpdate();
 
             if (affectedRows > 0) {
-                ResultSet keys = stmt.getGeneratedKeys();
-                if (keys.next()) {
-                    table.setTableId(keys.getInt(1));
+                try (ResultSet keys = stmt.getGeneratedKeys()) {
+                    if (keys.next()) {
+                        int tableId = keys.getInt(1);
+                        // Return a Table model with the generated ID
+                        Table table = new Table();
+                        table.setTableId(tableId);
+                        table.setCapacity(capacity);
+                        table.setTableStatus(true);
+
+                        return table;
+                    }
                 }
-                return true;
             }
+
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return false;
+
+        return null; // insertion failed
     }
+
+
 
     public Table getTableById(int tableId) {
         String sql = "SELECT * FROM tables WHERE table_id = ?";
@@ -38,9 +57,9 @@ public class tableDAO {
 
             if (rs.next()) {
                 int capacity = rs.getInt("capacity");
-                String tableStatus = rs.getString("table_status");
+                boolean tableStatus = rs.getBoolean("is_available");
 
-                return new Table(tableId, capacity, tableStatus);
+                return new Table(capacity, tableStatus);
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -49,12 +68,12 @@ public class tableDAO {
     }
 
     public boolean updateTable(Table table) {
-        String sql = "UPDATE tables SET capacity = ?, table_status = ? WHERE table_id = ?";
+        String sql = "UPDATE tables SET capacity = ?, is_available = ? WHERE table_id = ?";
         try (Connection conn = DB.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setInt(1, table.getCapacity());
-            stmt.setString(2, table.getTableStatus());
+            stmt.setBoolean(2, table.getTableStatus());
             stmt.setInt(3, table.getTableId());
 
             return stmt.executeUpdate() > 0;
@@ -93,7 +112,7 @@ public class tableDAO {
 
                 t.setTableId(rs.getInt("table_id"));
                 t.setCapacity(rs.getInt("capacity"));
-                t.setTableStatus(rs.getString("table_status"));
+                t.setTableStatus(rs.getBoolean("is_available"));
 
                 tables.add(t);
             }
@@ -105,4 +124,4 @@ public class tableDAO {
         return tables;
     }
 }
-*/
+

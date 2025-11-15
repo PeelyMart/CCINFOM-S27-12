@@ -4,18 +4,24 @@ public class Table {
     // Private attributes
     private int tableId;
     private int capacity;
-    private String tableStatus;
+    private boolean isAvailable;
 
     // Constructors
-    public Table() {
-    }
 
-    public Table(int tableId, int capacity, String tableStatus) {
+    public Table(){
+
+    }
+    public Table(int capacity, boolean tableStatus) {
+        this.capacity = capacity;
+        this.isAvailable = tableStatus;
+    }
+/*
+    public Table(int tableId, int capacity, boolean tableStatus) {
         this.tableId = tableId;
         this.capacity = capacity;
-        this.tableStatus = tableStatus;
+        this.isAvailable = tableStatus;
     }
-
+*/
     // Getters
     public int getTableId() {
         return tableId;
@@ -25,8 +31,8 @@ public class Table {
         return capacity;
     }
 
-    public String getTableStatus() {
-        return tableStatus;
+    public boolean getTableStatus(){
+        return isAvailable;
     }
 
     // Setters
@@ -38,7 +44,7 @@ public class Table {
         this.capacity = capacity;
     }
 
-    public void setTableStatus(String tableStatus) {
-        this.tableStatus = tableStatus;
+    public void setTableStatus(boolean tableStatus) {
+        this.isAvailable = tableStatus;
     }
 }

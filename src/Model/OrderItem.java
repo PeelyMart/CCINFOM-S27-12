@@ -1,26 +1,31 @@
 package Model;
 
+import java.math.BigDecimal;
+
 public class OrderItem {
     // Private attributes
     private int orderItemId;
     private int orderId;
     private int menuId;
     private int quantity;
-    private double subtotal;
-    private String status;
+    private BigDecimal subtotal;
+    private boolean isActive;
+    private String statusAsAtring;
 
     // Constructors
     public OrderItem() {
         
     }
 
-    public OrderItem(int orderItemId, int orderId, int menuId, int quantity, double subtotal, String status) {
+    public OrderItem(int orderItemId, int orderId, int menuId, int quantity, BigDecimal subtotal, Boolean status) {
         this.orderItemId = orderItemId;
         this.orderId = orderId;
         this.menuId = menuId;
         this.quantity = quantity;
         this.subtotal = subtotal;
-        this.status = status;
+        this.isActive= status;
+
+
     }
 
     // Getters
@@ -40,12 +45,16 @@ public class OrderItem {
         return quantity;
     }
 
-    public double getSubtotal() {
+    public BigDecimal getSubtotal() {
         return subtotal;
     }
 
-    public String getStatus() {
-        return status;
+    public Boolean getStatus() {
+        return isActive;
+    }
+
+    public String getStatusAsAtring(){
+        return statusAsAtring;
     }
 
     // Setters
@@ -65,11 +74,14 @@ public class OrderItem {
         this.quantity = quantity;
     }
 
-    public void setSubtotal(double subtotal) {
+    public void setSubtotal(BigDecimal subtotal) {
         this.subtotal = subtotal;
     }
 
-    public void setStatus(String status) {
-        this.status = status;
+    public void setStatus(Boolean status) {
+        this.isActive = status;
+        statusAsAtring = isActive ? "active" : "inactive";
     }
+
+
 }

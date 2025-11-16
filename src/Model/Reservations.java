@@ -10,18 +10,16 @@ public class Reservations {
     private int tableId;         
     private String reserveName;  
     private LocalDateTime dateAndTime;  
-    private double subtotal; 
-    private boolean isActive;    
+    private boolean isActive;
 
 
     //constructor
 
-    public Reservations(int requestId, int tableId, String reserveName, LocalDateTime dateAndTime, double subtotal, boolean isActive) {
+    public Reservations(int requestId, int tableId, String reserveName, LocalDateTime dateAndTime, boolean isActive) {
         this.requestId = requestId;
         this.tableId = tableId;
         this.reserveName = reserveName;
         this.dateAndTime = dateAndTime;
-        this.subtotal = subtotal;
         this.isActive = isActive;
     }
 
@@ -43,9 +41,6 @@ public class Reservations {
         return dateAndTime;
     }
 
-    public double getSubtotal() {
-        return subtotal;
-    }
 
     public boolean getIsActive() {
         return isActive;
@@ -61,14 +56,6 @@ public class Reservations {
 
     public void setReserveName(String reserveName) {
         this.reserveName = reserveName;
-    }
-
-    public void setDateAndTime(LocalDateTime dateAndTime) {
-        this.dateAndTime = dateAndTime;
-    }
-
-    public void setSubtotal(double subtotal) {
-        this.subtotal = subtotal;
     }
 
     public void setIsActive(boolean isActive) {

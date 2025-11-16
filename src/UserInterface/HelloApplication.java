@@ -6,6 +6,7 @@ import javafx.scene.Scene;
 import javafx.scene.layout.AnchorPane;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import UserInterface.LoginUI;
 
 import java.io.IOException;
 
@@ -26,7 +27,7 @@ public class HelloApplication extends Application {
          */
 
         // Load the login screen
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/Resources/Login/login.fxml"));
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/Resources/LogIn/login.fxml"));
         AnchorPane loginRoot = loader.load();
 
         Scene loginScene = new Scene(loginRoot);

@@ -5,6 +5,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.AnchorPane;
 import javafx.stage.Modality;
@@ -17,7 +18,7 @@ public class LoginUI {
     private TextField staffIDField;
 
     @FXML
-    private TextField passwordField;
+    private PasswordField passwordField;
 
     @FXML
     private Button loginButton;
@@ -27,7 +28,7 @@ public class LoginUI {
 
     public static void openLogin(Stage mainStage) {
         try {
-            FXMLLoader loader = new FXMLLoader(LoginUI.class.getResource("/Resources/Login/login.fxml"));
+            FXMLLoader loader = new FXMLLoader(LoginUI.class.getResource("/Resources/LogIn/login.fxml"));
             AnchorPane root = loader.load();
 
             LoginUI controller = loader.getController();
@@ -83,3 +84,4 @@ public class LoginUI {
         }
     }
 }
+

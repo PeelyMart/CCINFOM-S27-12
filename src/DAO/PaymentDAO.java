@@ -253,5 +253,44 @@ public class PaymentDAO {
         return reportList;
     }
 
+    public static List<PaymentReport> getPaymentReport(LocalDateTime startTime, LocalDateTime endTime) {
+        List<PaymentReport> reportList = new ArrayList<>();
+
+        String sql = "SELECT p.payment_method, "
+                + "COUNT(p.transaction_id) AS number_of_transactions, "
+                + "SUM(o.total_cost) AS total_amount_processed "
+                + "FROM payments p "
+                + "JOIN order_header o ON p.order_id = o.order_id "
+                + "WHERE p.is_active = 1 "
+                + "AND o.status = 'closed' "
+                + "AND o.order_time BETWEEN ? AND ? "
+                + "GROUP BY p.payment_method "
+                + "ORDER BY p.payment_method;";
+
+        try (Connection conn = DB.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            // Set the start and end times
+            stmt.setTimestamp(1, Timestamp.valueOf(startTime));
+            stmt.setTimestamp(2, Timestamp.valueOf(endTime));
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    String method = rs.getString("payment_method");
+                    BigDecimal total = rs.getBigDecimal("total_amount_processed");
+                    int count = rs.getInt("number_of_transactions");
+
+                    PaymentReport report = new PaymentReport(method, total, count);
+                    reportList.add(report);
+                }
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return reportList;
+    }
+
 
 }

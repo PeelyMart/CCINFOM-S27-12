@@ -112,7 +112,7 @@ public class ReportUI {
 
         switch (activeReport) {
             case "sales":
-                loadSalesReport();
+                loadSalesReport(fromDatePicker.getValue(), toDatePicker.getValue());
                 break;
             case "loyalty":
                 loadLoyaltyReport(fromDatePicker.getValue(), toDatePicker.getValue());
@@ -145,7 +145,12 @@ public class ReportUI {
         reportTextArea.setText(LoyaltyReportController.generateMonthlyMembersReport(monthlyNewMembers));
     }
 
-    private void loadSalesReport() {
+    private void loadSalesReport(){
         reportTextArea.setText(SalesReportController.getTransactionReportAsString(PaymentDAO.getPaymentReport()));
+
+    }
+
+    private void loadSalesReport(LocalDate from, LocalDate to) {
+        reportTextArea.setText(SalesReportController.getTransactionReportAsString(PaymentDAO.getPaymentReport(from.atStartOfDay(), to.atTime(23, 59, 59, 999_999_999))));
     }
 }

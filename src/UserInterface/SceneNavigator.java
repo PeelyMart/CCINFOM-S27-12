@@ -53,21 +53,28 @@ public class SceneNavigator {
             FXMLLoader loader = new FXMLLoader(SceneNavigator.class.getResource(fxmlPath));
             Parent root = loader.load();
 
-            // Get controller
-            Object controller = loader.getController();
-
-            // If controller has setData(), call it
-            try {
-                controller.getClass().getMethod("setData", Object.class).invoke(controller, data);
-            } catch (NoSuchMethodException ignored) {
-                // controller doesn't have setData → ignore
-            }
-
-            // Switch scene
-            stage.setScene(new Scene(root));
+            // Switch scene FIRST (this ensures initialize() is called)
+            Scene scene = new Scene(root);
+            stage.setScene(scene);
             stage.show();
 
+            // Get controller AFTER scene is set (initialize() has been called)
+            Object controller = loader.getController();
+
+            // If controller has setData(), call it NOW
+            if (controller != null && data != null) {
+                try {
+                    controller.getClass().getMethod("setData", Object.class).invoke(controller, data);
+                } catch (NoSuchMethodException ignored) {
+                    // controller doesn't have setData → ignore
+                } catch (Exception e) {
+                    System.err.println("Error calling setData(): " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+
         } catch (Exception e) {
+            System.err.println("Error in switchNoButton: " + e.getMessage());
             e.printStackTrace();
         }
     }

@@ -1,7 +1,9 @@
 package UserInterface;
 
 import Controller.TableActions;
+import DAO.OrderDB;
 import DAO.TableDAO;
+import Model.Order;
 import Model.Table;
 import Model.Staff;
 import Controller.UserService;
@@ -53,13 +55,20 @@ public class TransactionsUI {
 
     private void handleTableClick(Table table) {
 
-        // If table NOT available → block
+        // If table is occupied (NOT available) → show their order
         if (!table.getTableStatus()) {
-            SceneNavigator.showInfo("Table " + table.getTableId() + " is already occupied!");
+            Order order = OrderDB.getWholeOrderByTable(table.getTableId());
+            if (order != null) {
+                // Navigate to orders screen with the order data
+                Stage stage = (Stage) tableContainer.getScene().getWindow();
+                SceneNavigator.switchNoButton(stage, "/Resources/Transactions/orders.fxml", order);
+            } else {
+                SceneNavigator.showInfo("No order found for Table " + table.getTableId());
+            }
             return;
         }
 
-        // Take the table
+        // Table is available → take the table
         TableActions.initateTable(table, currentStaffId);
 
         // Refresh UI

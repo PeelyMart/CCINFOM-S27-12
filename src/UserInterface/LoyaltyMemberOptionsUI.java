@@ -80,7 +80,6 @@ public class LoyaltyMemberOptionsUI {
         ArrayList<LoyaltyMember> allMembers = loyaltyDAO.getAllLoyaltyMembers();
         
         for (LoyaltyMember member : allMembers) {
-            // Split name into first and last name
             String[] nameParts = member.getName().trim().split("\\s+", 2);
             String firstName = nameParts.length > 0 ? nameParts[0] : "";
             String lastName = nameParts.length > 1 ? nameParts[1] : "";
@@ -121,13 +120,11 @@ public class LoyaltyMemberOptionsUI {
             return;
         }
 
-        // Try parsing as ID first
         try {
             int memberId = Integer.parseInt(input);
             LoyaltyMember member = loyaltyDAO.getLoyaltyMemberById(memberId);
             if (member != null) {
                 loyaltyList.clear();
-                // Split name into first and last name
                 String[] nameParts = member.getName().trim().split("\\s+", 2);
                 String firstName = nameParts.length > 0 ? nameParts[0] : "";
                 String lastName = nameParts.length > 1 ? nameParts[1] : "";
@@ -146,10 +143,8 @@ public class LoyaltyMemberOptionsUI {
                 return;
             }
         } catch (NumberFormatException e) {
-            // Not a number, search by name or other fields
         }
         
-        // Search by name, contact, status (partial match)
         ArrayList<LoyaltyMember> allMembers = loyaltyDAO.getAllLoyaltyMembers();
         loyaltyList.clear();
         String searchLower = input.toLowerCase();
@@ -157,19 +152,15 @@ public class LoyaltyMemberOptionsUI {
         for (LoyaltyMember member : allMembers) {
             boolean matches = false;
             
-            // Check customer ID
             if (String.valueOf(member.getCustomerId()).contains(input)) {
                 matches = true;
             }
-            // Check name (partial)
             else if (member.getName() != null && member.getName().toLowerCase().contains(searchLower)) {
                 matches = true;
             }
-            // Check contact (partial)
             else if (member.getContact() != null && member.getContact().toLowerCase().contains(searchLower)) {
                 matches = true;
             }
-            // Check status (partial)
             else if (member.getStatus() != null && member.getStatus().toLowerCase().contains(searchLower)) {
                 matches = true;
             }
@@ -315,7 +306,6 @@ public class LoyaltyMemberOptionsUI {
                         try {
                             int points = Integer.parseInt(pointsStr);
                             
-                            // Date picker for join date
                             DatePicker datePicker = new DatePicker(
                                 updatedMember.getJoinDate() != null ? updatedMember.getJoinDate() : LocalDate.now());
                             datePicker.setPromptText("Select Join Date");
@@ -384,7 +374,6 @@ public class LoyaltyMemberOptionsUI {
         });
     }
 
-    // Display class for table
     public static class LoyaltyMemberDisplay {
         private String customerId;
         private String firstName;

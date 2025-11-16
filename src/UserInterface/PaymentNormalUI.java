@@ -66,7 +66,6 @@ public class PaymentNormalUI {
             orderSummaryArea.setText(summary.toString());
         }
 
-        // Calculate total (no discount for non-members)
         finalTotal = currentOrder.getTotalCost() != null ? currentOrder.getTotalCost() : BigDecimal.ZERO;
         
         if (totalArea != null) {
@@ -76,20 +75,18 @@ public class PaymentNormalUI {
 
     @FXML
     private void initialize() {
-        // PAY button → go to payment method
+
         if (payButton != null) {
             payButton.setOnAction(e -> {
                 if (currentOrder == null || finalTotal == null) {
                     SceneNavigator.showError("No order data available.");
                     return;
                 }
-                // Pass order data to payment method screen
                 javafx.stage.Stage stage = (javafx.stage.Stage) payButton.getScene().getWindow();
                 SceneNavigator.switchNoButton(stage, "/Resources/Transactions/paymentMethod.fxml", currentOrder);
             });
         }
 
-        // BACK button → go back to orders
         if (backButton != null) {
             backButton.setOnAction(e -> {
                 javafx.stage.Stage stage = (javafx.stage.Stage) backButton.getScene().getWindow();
@@ -97,7 +94,6 @@ public class PaymentNormalUI {
             });
         }
 
-        // PWD button → placeholder (could implement PWD discount)
         if (pwdButton != null) {
             pwdButton.setOnAction(e -> {
                 SceneNavigator.showInfo("PWD discount feature coming soon.");

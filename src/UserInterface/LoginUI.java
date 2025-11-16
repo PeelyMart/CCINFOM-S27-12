@@ -23,8 +23,8 @@ public class LoginUI {
     @FXML
     private Button loginButton;
 
-    private Stage loginStage;  // popup
-    private Stage mainStage;   // main application stage
+    private Stage loginStage;
+    private Stage mainStage;
 
     public static void openLogin(Stage mainStage) {
         try {
@@ -66,10 +66,8 @@ public class LoginUI {
         );
 
         if (resultFlag == 0) {
-            // Success: close login popup
             if (loginStage != null) loginStage.close();
 
-            // Open dashboard in main stage
             DashboardUI.openDashboard(mainStage);
         } else {
             System.out.println("Login failed or input error");

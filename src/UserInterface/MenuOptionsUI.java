@@ -109,7 +109,6 @@ public class MenuOptionsUI {
         }
     }
 
-    // ===================== ADD =====================
     @FXML
     private void handleAdd() {
         TextInputDialog nameDialog = new TextInputDialog();
@@ -137,11 +136,11 @@ public class MenuOptionsUI {
                         m.setMenuName(name);
                         m.setDescription(desc);
                         m.setPrice(price.doubleValue());
-                        m.setStatus(true); // default available
+                        m.setStatus(true);
 
                         if (menuItemDAO.addMenuItem(m)) {
                             SceneNavigator.showInfo("Menu Item added successfully!");
-                            loadAllMenuItems(); // Refresh table
+                            loadAllMenuItems();
                         } else {
                             SceneNavigator.showError("Failed to add Menu Item. Try again.");
                         }
@@ -158,11 +157,10 @@ public class MenuOptionsUI {
     private void handleSearch() {
         String input = searchMenu.getText().trim();
         if (input.isEmpty()) {
-            loadAllMenuItems(); // Show all if search is empty
+            loadAllMenuItems();
             return;
         }
 
-        // Try parsing as ID first
         try {
             int id = Integer.parseInt(input);
             MenuItem m = menuItemDAO.getMenuItemById(id);
@@ -174,10 +172,8 @@ public class MenuOptionsUI {
             }
             return;
         } catch (NumberFormatException ignored) {
-            // Not a number, search by name
         }
 
-        // Search by name (partial match)
         List<MenuItem> allItems = menuItemDAO.getAllMenuItems();
         if (allItems != null) {
             List<MenuItem> matching = allItems.stream()
@@ -194,7 +190,6 @@ public class MenuOptionsUI {
         }
     }
 
-    // ===================== UPDATE =====================
     @FXML
     private void handleUpdate() {
         MenuItem selected = menuTable.getSelectionModel().getSelectedItem();

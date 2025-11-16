@@ -10,7 +10,7 @@ public class OptionsUI {
 
     @FXML
     private void initialize() {
-        // assign the same handler to all buttons
+
         if (tableButton != null)
             tableButton.setOnAction(e -> SceneNavigator.switchScene(tableButton, "/Resources/TableOptions/table-options.fxml"));
 

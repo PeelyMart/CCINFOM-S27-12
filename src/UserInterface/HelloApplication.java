@@ -26,7 +26,6 @@ public class HelloApplication extends Application {
 
          */
 
-        // Load the login screen
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/Resources/LogIn/login.fxml"));
         AnchorPane loginRoot = loader.load();
 
@@ -38,7 +37,6 @@ public class HelloApplication extends Application {
         loginStage.setResizable(false);
         loginStage.setScene(loginScene);
 
-// Get controller and set stages
         LoginUI UI = loader.getController();
         UI.setStages(loginStage, stage);  // 'stage' is your main stage
 

@@ -63,10 +63,8 @@ public class OrdersUI {
         System.out.println("quantityColumn is null: " + (quantityColumn == null));
         System.out.println("activeColumn is null: " + (activeColumn == null));
         
-        // Setup TableView columns FIRST - this is critical
         setupTableViewColumns();
 
-        // Button actions
         if (addButton != null) {
             addButton.setOnAction(e -> handleAdd());
         }
@@ -80,12 +78,10 @@ public class OrdersUI {
             editButton.setOnAction(e -> handleEdit());
         }
 
-        // PAY button -> open payment UI
         if (payButton != null) {
             payButton.setOnAction(e -> openPaymentChoice());
         }
 
-        // BACK button -> go back to Transaction Menu
         if (backButton != null) {
             backButton.setOnAction(e -> {
                 javafx.stage.Stage stage = (javafx.stage.Stage) backButton.getScene().getWindow();
@@ -93,7 +89,6 @@ public class OrdersUI {
             });
         }
 
-        // If there's an order already set, load it now
         if (currentOrder != null) {
             System.out.println("Loading currentOrder in initialize()");
             loadOrderItems(currentOrder);
@@ -121,7 +116,6 @@ public class OrdersUI {
             System.out.println("ERROR: activeColumn is null!");
         }
         
-        // Verify columns are added to TableView
         if (orderItemsTable != null) {
             System.out.println("TableView has " + orderItemsTable.getColumns().size() + " columns");
         }
@@ -138,7 +132,6 @@ public class OrdersUI {
             System.out.println("Order received - Order ID: " + order.getOrderId() + ", Table ID: " + order.getTableId());
             System.out.println("Order items count: " + (order.getOrderItems() != null ? order.getOrderItems().size() : 0));
             
-            // If TableView columns are set up, load immediately
             if (orderItemsTable != null) {
                 setupTableViewColumns(); // Ensure columns are set up
                 loadOrderItems(order);
@@ -188,13 +181,10 @@ public class OrdersUI {
 
         System.out.println("Loading " + order.getOrderItems().size() + " order items");
         
-        // Group items by menu item AND status (both active and completed)
-        // Map: "menuName_active" or "menuName_completed" -> combined quantity
         Map<String, Integer> groupedItems = new LinkedHashMap<>();
         Map<String, OrderItem> representativeItems = new LinkedHashMap<>(); // Store one item per group
         BigDecimal totalSubtotal = BigDecimal.ZERO;
         
-        // Process ALL items (both active and completed) and group by menu item + status
         for (OrderItem item : order.getOrderItems()) {
             MenuItem menuItem = menuItemDAO.getMenuItemById(item.getMenuId());
             String menuName;
@@ -204,19 +194,15 @@ public class OrdersUI {
                 menuName = "Unknown (ID: " + item.getMenuId() + ")";
             }
             
-            // Determine status: active or completed
             boolean isActive = item.getStatus() != null && item.getStatus();
             String status = isActive ? "active" : "completed";
             
-            // Only add active items to subtotal
             if (isActive) {
                 totalSubtotal = totalSubtotal.add(item.getSubtotal());
             }
             
-            // Create key with menu name and status
             String key = menuName + "_" + status;
             
-            // Group by menu item and status
             if (groupedItems.containsKey(key)) {
                 groupedItems.put(key, groupedItems.get(key) + item.getQuantity());
             } else {
@@ -227,15 +213,12 @@ public class OrdersUI {
             System.out.println("Added item: " + menuName + " x" + item.getQuantity() + " (" + status + ")");
         }
         
-        // Build display items from grouped map - separate rows for active and completed
         List<OrderItemDisplay> displayItems = new ArrayList<>();
         for (Map.Entry<String, Integer> entry : groupedItems.entrySet()) {
             String key = entry.getKey();
             int totalQuantity = entry.getValue();
             OrderItem representativeItem = representativeItems.get(key);
             
-            // Extract menu name and status from key
-            // Key format: "menuName_status" - find last underscore to separate
             int lastUnderscore = key.lastIndexOf("_");
             String menuName = key.substring(0, lastUnderscore);
             String status = key.substring(lastUnderscore + 1);
@@ -247,28 +230,23 @@ public class OrdersUI {
 
         System.out.println("Total display items created: " + displayItems.size());
         
-        // Store in final variables for use in lambda
         final BigDecimal finalTotalSubtotal = totalSubtotal;
         final List<OrderItemDisplay> finalDisplayItems = displayItems;
 
         if (orderItemsTable != null) {
             System.out.println("Setting items on TableView...");
-            // Use Platform.runLater to ensure UI updates on JavaFX thread
             Platform.runLater(() -> {
                 try {
                     orderItemsTable.setItems(FXCollections.observableArrayList(finalDisplayItems));
                     System.out.println("✓ TableView updated with " + finalDisplayItems.size() + " items");
                     System.out.println("✓ TableView.items.size() = " + orderItemsTable.getItems().size());
                     
-                    // Update subtotal label
                     if (subtotalLabel != null) {
                         subtotalLabel.setText("Subtotal: $" + String.format("%.2f", finalTotalSubtotal));
                     }
                     
-                    // Force refresh
                     orderItemsTable.refresh();
                     
-                    // Verify columns
                     System.out.println("✓ TableView has " + orderItemsTable.getColumns().size() + " columns");
                     if (orderItemsTable.getColumns().size() > 0) {
                         System.out.println("✓ First column: " + orderItemsTable.getColumns().get(0).getText());
@@ -289,27 +267,23 @@ public class OrdersUI {
         System.out.println("========== loadOrderItems() finished ==========");
     }
 
-    // Match the TextField onAction in FXML
     @FXML
     private void searchStaffEntries() {
         handleSearch();
     }
     
-    // ===================== ADD =====================
     private void handleAdd() {
         if (currentOrder == null) {
             SceneNavigator.showError("No order selected. Please search for an order first.");
             return;
         }
         
-        // Get all menu items for dropdown
         ArrayList<MenuItem> allMenuItems = menuItemDAO.getAllMenuItems();
         if (allMenuItems == null || allMenuItems.isEmpty()) {
             SceneNavigator.showError("No menu items available.");
             return;
         }
         
-        // Create list of menu item display strings (name + price)
         List<String> menuItemOptions = new ArrayList<>();
         for (MenuItem item : allMenuItems) {
             if (item.getStatus() != null && item.getStatus()) { // Only show available items
@@ -322,7 +296,6 @@ public class OrdersUI {
             return;
         }
         
-        // Show dropdown for menu selection
         ChoiceDialog<String> menuDialog = new ChoiceDialog<>(menuItemOptions.get(0), menuItemOptions);
         menuDialog.setTitle("Add Order Item");
         menuDialog.setHeaderText("Select Menu Item:");
@@ -330,10 +303,8 @@ public class OrdersUI {
         Optional<String> menuResult = menuDialog.showAndWait();
         
         menuResult.ifPresent(selectedMenu -> {
-            // Extract menu name from selection (format: "Name - $price")
             String menuName = selectedMenu.split(" - ")[0];
             
-            // Find the menu item
             MenuItem selectedMenuItem = null;
             for (MenuItem item : allMenuItems) {
                 if (item.getMenuName().equals(menuName)) {
@@ -347,10 +318,8 @@ public class OrdersUI {
                 return;
             }
             
-            // Store in final variable for use in nested lambda
             final MenuItem finalSelectedMenuItem = selectedMenuItem;
             
-            // Get quantity
             TextInputDialog qtyDialog = new TextInputDialog("1");
             qtyDialog.setTitle("Add Order Item");
             qtyDialog.setHeaderText("Enter quantity:");
@@ -369,10 +338,8 @@ public class OrdersUI {
                     return;
                 }
                 
-                // Calculate subtotal
                 BigDecimal subtotal = BigDecimal.valueOf(finalSelectedMenuItem.getPrice()).multiply(BigDecimal.valueOf(quantity));
                 
-                // Create order item
                 OrderItem newItem = new OrderItem();
                 newItem.setOrderId(currentOrder.getOrderId());
                 newItem.setMenuId(finalSelectedMenuItem.getMenuId());
@@ -380,7 +347,6 @@ public class OrdersUI {
                 newItem.setSubtotal(subtotal);
                 newItem.setStatus(true); // Active by default
                 
-                // Add to database
                 boolean success = orderitemDAO.addOrderItem(newItem);
                 if (success) {
                     SceneNavigator.showInfo("Order item added successfully!");
@@ -393,7 +359,6 @@ public class OrdersUI {
         });
     }
     
-    // ===================== SEARCH =====================
     private void handleSearch() {
         String input = searchOrder.getText().trim();
         if (input.isEmpty()) {
@@ -404,22 +369,18 @@ public class OrdersUI {
             return;
         }
         
-        // Search within current order's items only (filter display)
         if (currentOrder == null || currentOrder.getOrderItems() == null || currentOrder.getOrderItems().isEmpty()) {
             SceneNavigator.showError("No order loaded. Please select a table first.");
             return;
         }
         
-        // Filter items in current order by menu item name
         String searchLower = input.toLowerCase();
         List<OrderItemDisplay> filteredItems = new ArrayList<>();
         
-        // Group filtered items by menu item and status
         Map<String, Integer> groupedItems = new LinkedHashMap<>();
         Map<String, OrderItem> representativeItems = new LinkedHashMap<>();
         BigDecimal totalSubtotal = BigDecimal.ZERO;
         
-        // Filter and group items
         for (OrderItem item : currentOrder.getOrderItems()) {
             MenuItem menuItem = menuItemDAO.getMenuItemById(item.getMenuId());
             String menuName;
@@ -429,24 +390,19 @@ public class OrdersUI {
                 menuName = "Unknown (ID: " + item.getMenuId() + ")";
             }
             
-            // Check if menu name matches search
             if (!menuName.toLowerCase().contains(searchLower)) {
                 continue; // Skip items that don't match
             }
             
-            // Determine status
             boolean isActive = item.getStatus() != null && item.getStatus();
             String status = isActive ? "active" : "completed";
             
-            // Only add active items to subtotal
             if (isActive) {
                 totalSubtotal = totalSubtotal.add(item.getSubtotal());
             }
             
-            // Create key with menu name and status
             String key = menuName + "_" + status;
             
-            // Group by menu item and status
             if (groupedItems.containsKey(key)) {
                 groupedItems.put(key, groupedItems.get(key) + item.getQuantity());
             } else {
@@ -455,7 +411,6 @@ public class OrdersUI {
             }
         }
         
-        // Build display items from grouped map
         for (Map.Entry<String, Integer> entry : groupedItems.entrySet()) {
             String key = entry.getKey();
             int totalQuantity = entry.getValue();

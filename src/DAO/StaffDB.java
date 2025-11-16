@@ -72,6 +72,49 @@ public class StaffDB{
         }
         return staffs;
     }
+
+    public static boolean addStaff(Staff staff) {
+        String query = "INSERT INTO staff (first_name, last_name, contact_number, staff_pin) VALUES (?, ?, ?, ?)";
+        try (Connection conn = DB.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setString(1, staff.getFirstName());
+            stmt.setString(2, staff.getLastName());
+            stmt.setString(3, staff.getContactNumber());
+            stmt.setInt(4, staff.getStaffPin());
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public static boolean updateStaff(Staff staff) {
+        String query = "UPDATE staff SET first_name = ?, last_name = ?, contact_number = ?, staff_pin = ? WHERE staff_id = ?";
+        try (Connection conn = DB.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setString(1, staff.getFirstName());
+            stmt.setString(2, staff.getLastName());
+            stmt.setString(3, staff.getContactNumber());
+            stmt.setInt(4, staff.getStaffPin());
+            stmt.setInt(5, staff.getStaffId());
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public static boolean deleteStaff(int staffId) {
+        String query = "DELETE FROM staff WHERE staff_id = ?";
+        try (Connection conn = DB.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setInt(1, staffId);
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 }
 
 

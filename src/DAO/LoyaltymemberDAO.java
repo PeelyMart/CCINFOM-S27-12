@@ -64,16 +64,24 @@ public class LoyaltymemberDAO {
 
 
     public boolean addLoyaltyMember(LoyaltyMember member) {
-        String sql = "INSERT INTO loyalty_members (name, contact, join_date, points, status) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO loyalty_members (first_name, last_name, contact_number, join_date, points, is_active) VALUES (?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DB.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
-            stmt.setString(1, member.getName());
-            stmt.setString(2, member.getContact());
-            stmt.setDate(3, Date.valueOf(member.getJoinDate()));
-            stmt.setInt(4, member.getPoints());
-            stmt.setString(5, member.getStatus());
+            // Split name into first_name and last_name
+            String[] nameParts = member.getName().trim().split("\\s+", 2);
+            String firstName = nameParts.length > 0 ? nameParts[0] : "";
+            String lastName = nameParts.length > 1 ? nameParts[1] : "";
+            
+            stmt.setString(1, firstName);
+            stmt.setString(2, lastName);
+            stmt.setString(3, member.getContact());
+            stmt.setDate(4, Date.valueOf(member.getJoinDate()));
+            stmt.setInt(5, member.getPoints());
+            // Convert string status to boolean is_active
+            boolean isActive = "active".equalsIgnoreCase(member.getStatus());
+            stmt.setBoolean(6, isActive);
 
             int affected = stmt.executeUpdate();
             if (affected > 0) {
@@ -101,13 +109,17 @@ public class LoyaltymemberDAO {
             ResultSet rs = stmt.executeQuery();
 
             if (rs.next()) {
-                String name = rs.getString("name");
-                String contact = rs.getString("contact");
-                LocalDate joinDate = rs.getDate("join_date").toLocalDate();
+                String firstName = rs.getString("first_name");
+                String lastName = rs.getString("last_name");
+                String name = (firstName != null ? firstName : "") + " " + (lastName != null ? lastName : "").trim();
+                String contact = rs.getString("contact_number");
+                Date joinDate = rs.getDate("join_date");
+                LocalDate joinDateLocal = joinDate != null ? joinDate.toLocalDate() : LocalDate.now();
                 int points = rs.getInt("points");
-                String status = rs.getString("status");
+                boolean isActive = rs.getBoolean("is_active");
+                String status = isActive ? "active" : "inactive";
 
-                return new LoyaltyMember(memberId, name, contact, joinDate, points, status);
+                return new LoyaltyMember(memberId, name, contact, joinDateLocal, points, status);
             }
 
         } catch (SQLException e) {
@@ -118,17 +130,25 @@ public class LoyaltymemberDAO {
     }
 
     public boolean updateLoyaltyMember(LoyaltyMember member) {
-        String sql = "UPDATE loyalty_members SET name = ?, contact = ?, join_date = ?, points = ?, status = ? WHERE customer_id = ?";
+        String sql = "UPDATE loyalty_members SET first_name = ?, last_name = ?, contact_number = ?, join_date = ?, points = ?, is_active = ? WHERE customer_id = ?";
 
         try (Connection conn = DB.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setString(1, member.getName());
-            stmt.setString(2, member.getContact());
-            stmt.setDate(3, Date.valueOf(member.getJoinDate()));
-            stmt.setInt(4, member.getPoints());
-            stmt.setString(5, member.getStatus());
-            stmt.setInt(6, member.getCustomerId());
+            // Split name into first_name and last_name
+            String[] nameParts = member.getName().trim().split("\\s+", 2);
+            String firstName = nameParts.length > 0 ? nameParts[0] : "";
+            String lastName = nameParts.length > 1 ? nameParts[1] : "";
+            
+            stmt.setString(1, firstName);
+            stmt.setString(2, lastName);
+            stmt.setString(3, member.getContact());
+            stmt.setDate(4, Date.valueOf(member.getJoinDate()));
+            stmt.setInt(5, member.getPoints());
+            // Convert string status to boolean is_active
+            boolean isActive = "active".equalsIgnoreCase(member.getStatus());
+            stmt.setBoolean(6, isActive);
+            stmt.setInt(7, member.getCustomerId());
 
             return stmt.executeUpdate() > 0;
 
@@ -167,11 +187,17 @@ public class LoyaltymemberDAO {
                 LoyaltyMember m = new LoyaltyMember();
 
                 m.setCustomerId(rs.getInt("customer_id"));
-                m.setName(rs.getString("name"));
-                m.setContact(rs.getString("contact"));
-                m.setJoinDate(rs.getDate("join_date").toLocalDate());
+                // Combine first_name and last_name into name field
+                String firstName = rs.getString("first_name");
+                String lastName = rs.getString("last_name");
+                m.setName((firstName != null ? firstName : "") + " " + (lastName != null ? lastName : "").trim());
+                m.setContact(rs.getString("contact_number"));
+                Date joinDate = rs.getDate("join_date");
+                m.setJoinDate(joinDate != null ? joinDate.toLocalDate() : LocalDate.now());
                 m.setPoints(rs.getInt("points"));
-                m.setStatus(rs.getString("status"));
+                // Convert boolean is_active to string status
+                boolean isActive = rs.getBoolean("is_active");
+                m.setStatus(isActive ? "active" : "inactive");
 
                 members.add(m);
             }

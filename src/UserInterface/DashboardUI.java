@@ -70,11 +70,11 @@ public class DashboardUI {
         Staff currentUser = UserService.getCurrentUser();
         if (currentUser != null) {
             cashierField.setText(currentUser.getFirstName() + " " + currentUser.getLastName());
-            printGreeting.setText("👋 Hello, " + currentUser.getFirstName() + "!\n\n" +
+            printGreeting.setText("\n👋 Hello, " + currentUser.getFirstName() + "!\n\n" +
                     "Welcome to the Restaurant Management System.\n\n" +
                     "Select an option from the menu to get started.");
         } else {
-            printGreeting.setText("👋 Hello!\n\n" +
+            printGreeting.setText("\n👋 Hello!\n\n" +
                     "Welcome to the Restaurant Management System.\n\n" +
                     "Select an option from the menu to get started.");
         }
@@ -132,6 +132,17 @@ public class DashboardUI {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
+    }
+    
+    // ------------------------------
+    // Load transactions in dashboard content (called from SceneNavigator)
+    // ------------------------------
+    public void loadTransactionsContent() {
+        try {
+            loadContent("/Resources/MainMenu/transactions.fxml");
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }

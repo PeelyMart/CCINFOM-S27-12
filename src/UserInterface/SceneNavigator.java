@@ -87,6 +87,29 @@ public class SceneNavigator {
         }
     }
 
-
+    public static void switchToDashboard(Stage stage) {
+        try {
+            FXMLLoader loader = new FXMLLoader(SceneNavigator.class.getResource("/Resources/MainMenu/dashboard.fxml"));
+            Parent root = loader.load();
+            
+            DashboardUI controller = loader.getController();
+            if (controller != null) {
+                controller.setMainStage(stage);
+                // Load transactions in dashboard content area
+                try {
+                    controller.loadTransactionsContent();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            
+            Scene scene = new Scene(root);
+            stage.setScene(scene);
+            stage.show();
+        } catch (Exception e) {
+            System.err.println("SceneNavigator: Error switching to dashboard: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
 
 }

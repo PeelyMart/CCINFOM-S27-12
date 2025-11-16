@@ -4,6 +4,7 @@ import DAO.PaymentDAO;
 import Model.Payment;
 import Model.PaymentReport;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -22,14 +23,30 @@ public class SalesReportController {
 
     public static String getTransactionReportAsString(List<PaymentReport> list) {
         StringBuilder sb = new StringBuilder();
+        
+        sb.append("═══════════════════════════════════════════════════\n");
+        sb.append("              SALES REPORT\n");
+        sb.append("═══════════════════════════════════════════════════\n\n");
 
         if (!list.isEmpty()) {
+            // Calculate totals
+            int totalTransactions = 0;
+            BigDecimal grandTotal = BigDecimal.ZERO;
+            
+            sb.append(String.format("%-20s | %12s | %15s\n", "Payment Method", "Transactions", "Total Amount"));
+            sb.append("───────────────────────────────────────────────────────\n");
+            
             for (PaymentReport row : list) {
-                sb.append("Payment Method: ").append(row.getType()).append("\n")
-                        .append("Transactions: ").append(row.getTransactions()).append("\n")
-                        .append("Total Processed: ").append(row.getTotal()).append("\n")
-                        .append("------------------------------------\n");
+                totalTransactions += row.getTransactions();
+                grandTotal = grandTotal.add(row.getTotal() != null ? row.getTotal() : BigDecimal.ZERO);
+                sb.append(String.format("%-20s | %12d | $%14.2f\n", 
+                    row.getType(), row.getTransactions(), 
+                    row.getTotal() != null ? row.getTotal().doubleValue() : 0.0));
             }
+            
+            sb.append("───────────────────────────────────────────────────────\n");
+            sb.append(String.format("%-20s | %12d | $%14.2f\n", "TOTAL", totalTransactions, grandTotal.doubleValue()));
+            sb.append("═══════════════════════════════════════════════════\n");
         } else {
             sb.append("No transaction data available.\n");
         }

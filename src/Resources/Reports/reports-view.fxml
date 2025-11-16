@@ -67,7 +67,10 @@
                 <TextArea fx:id="reportTextArea"
                           layoutY="50.0"
                           prefHeight="230.0"
-                          prefWidth="532.0" />
+                          prefWidth="532.0"
+                          style="-fx-font-family: 'Courier New', monospace; -fx-font-size: 13px; -fx-text-fill: white; -fx-background-color: #1a1f35; -fx-control-inner-background: #1a1f35;"
+                          editable="false"
+                          wrapText="false" />
 
             </children>
         </AnchorPane>

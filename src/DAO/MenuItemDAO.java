@@ -8,7 +8,7 @@ import java.util.ArrayList;
 public class MenuItemDAO {
 
     public boolean addMenuItem(MenuItem menuItem) {
-        String sql = "INSERT INTO menu_items (name, description, price, status) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO menu_items (name, description, price, is_available) VALUES (?, ?, ?, ?)";
         try (Connection conn = DB.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
@@ -56,7 +56,7 @@ public class MenuItemDAO {
     }
 
     public boolean updateMenuItem(MenuItem menuItem) {
-        String sql = "UPDATE menu_items SET name = ?, description = ?, price = ?, status = ? WHERE menu_id = ?";
+        String sql = "UPDATE menu_items SET name = ?, description = ?, price = ?, is_available = ? WHERE menu_id = ?";
         try (Connection conn = DB.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 

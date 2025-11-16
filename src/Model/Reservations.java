@@ -58,6 +58,10 @@ public class Reservations {
         this.reserveName = reserveName;
     }
 
+    public void setDateAndTime(LocalDateTime dateAndTime) {
+        this.dateAndTime = dateAndTime;
+    }
+
     public void setIsActive(boolean isActive) {
         this.isActive = isActive;
     }

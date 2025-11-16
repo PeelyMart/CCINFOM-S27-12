@@ -14,9 +14,18 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.ChoiceDialog;
+import javafx.scene.control.DatePicker;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.Label;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.GridPane;
+import javafx.util.Pair;
+import javafx.geometry.Insets;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -197,14 +206,15 @@ public class reservationsUI {
     private void handleSearch() {
         String input = searchReservations.getText().trim();
         if (input.isEmpty()) {
-            SceneNavigator.showError("Please enter a name or date to search.");
+            // If empty, reload all
+            loadAllReservations();
             return;
         }
         
         ArrayList<Reservations> allReservations = ReservationController.getAllReservations();
         ArrayList<Reservations> matchingReservations = new ArrayList<>();
         
-        // Search by name or date
+        // Search by name, date, table ID, or any field (partial match)
         String searchLower = input.toLowerCase();
         for (Reservations r : allReservations) {
             // Filter by table if set
@@ -212,21 +222,34 @@ public class reservationsUI {
                 continue;
             }
             
-            // Check if name matches
+            // Check if name matches (partial)
             if (r.getReserveName().toLowerCase().contains(searchLower)) {
                 matchingReservations.add(r);
                 continue;
             }
             
-            // Check if date matches
+            // Check if date matches (partial)
             String dateStr = r.getDateAndTime().format(DATE_FORMATTER);
-            if (dateStr.contains(input)) {
+            if (dateStr.toLowerCase().contains(searchLower)) {
+                matchingReservations.add(r);
+                continue;
+            }
+            
+            // Check if table ID matches
+            if (String.valueOf(r.getTableId()).contains(input)) {
+                matchingReservations.add(r);
+                continue;
+            }
+            
+            // Check if reservation ID matches
+            if (String.valueOf(r.getRequestId()).contains(input)) {
                 matchingReservations.add(r);
             }
         }
         
         if (matchingReservations.isEmpty()) {
-            SceneNavigator.showError("No reservations found matching: " + input);
+            SceneNavigator.showInfo("No reservations found matching: " + input);
+            reservationsList.clear();
             return;
         }
         
@@ -260,20 +283,85 @@ public class reservationsUI {
             return;
         }
 
-        TextInputDialog nameDialog = new TextInputDialog(reservation.getReserveName());
-        nameDialog.setTitle("Edit Reservation");
-        nameDialog.setHeaderText("Enter new Customer Name:");
-        Optional<String> nameInput = nameDialog.showAndWait();
-
-        nameInput.ifPresent(newName -> {
-            LocalDateTime newTime = reservation.getDateAndTime(); // Keep original time
-            boolean success = ReservationController.editReservation(reservation.getRequestId(), newName, newTime);
-
-            if (success) {
-                SceneNavigator.showInfo("Reservation " + reservation.getRequestId() + " updated successfully.");
-            } else {
-                SceneNavigator.showError("Update failed. Reservation may not exist.");
+        // Get all tables for dropdown
+        List<Model.Table> allTables = DAO.TableDAO.getAllTables();
+        if (allTables == null || allTables.isEmpty()) {
+            SceneNavigator.showError("No tables available.");
+            return;
+        }
+        
+        // Create list of table options
+        List<String> tableOptions = new ArrayList<>();
+        int currentTableIndex = 0;
+        for (int i = 0; i < allTables.size(); i++) {
+            Model.Table table = allTables.get(i);
+            tableOptions.add("Table " + table.getTableId() + " (Capacity: " + table.getCapacity() + ")");
+            if (table.getTableId() == reservation.getTableId()) {
+                currentTableIndex = i;
             }
+        }
+        
+        // Step 1: Select table
+        ChoiceDialog<String> tableDialog = new ChoiceDialog<>(tableOptions.get(currentTableIndex), tableOptions);
+        tableDialog.setTitle("Edit Reservation");
+        tableDialog.setHeaderText("Select Table:");
+        tableDialog.setContentText("Choose a table:");
+        Optional<String> tableResult = tableDialog.showAndWait();
+
+        tableResult.ifPresent(selectedTable -> {
+            // Extract table ID from selection
+            int newTableID = Integer.parseInt(selectedTable.replaceAll("[^0-9]", "").split(" ")[0]);
+            final int finalTableID = newTableID;
+
+            // Step 2: Enter name
+            TextInputDialog nameDialog = new TextInputDialog(reservation.getReserveName());
+            nameDialog.setTitle("Edit Reservation");
+            nameDialog.setHeaderText("Enter Customer Name:");
+            Optional<String> nameInput = nameDialog.showAndWait();
+
+            nameInput.ifPresent(newName -> {
+                // Step 3: Select date and time using DatePicker and time ComboBoxes
+                Dialog<Pair<LocalDate, LocalTime>> dateTimeDialog = createDateTimePickerDialog(
+                    reservation.getDateAndTime().toLocalDate(),
+                    reservation.getDateAndTime().toLocalTime()
+                );
+                dateTimeDialog.setTitle("Edit Reservation");
+                dateTimeDialog.setHeaderText("Select Date and Time:");
+                
+                Optional<Pair<LocalDate, LocalTime>> dateTimeResult = dateTimeDialog.showAndWait();
+
+                dateTimeResult.ifPresent(dateTime -> {
+                    LocalDate selectedDate = dateTime.getKey();
+                    LocalTime selectedTime = dateTime.getValue();
+                    LocalDateTime newTime = LocalDateTime.of(selectedDate, selectedTime);
+                    
+                    // Step 4: Select activity status
+                    ChoiceDialog<String> statusDialog = new ChoiceDialog<>(
+                        reservation.getIsActive() ? "Active" : "Inactive",
+                        "Active", "Inactive");
+                    statusDialog.setTitle("Edit Reservation");
+                    statusDialog.setHeaderText("Select Status:");
+                    Optional<String> statusInput = statusDialog.showAndWait();
+
+                    statusInput.ifPresent(statusStr -> {
+                        boolean isActive = "Active".equals(statusStr);
+                        
+                        boolean success = ReservationController.editReservation(
+                            reservation.getRequestId(), 
+                            finalTableID, 
+                            newName, 
+                            newTime, 
+                            isActive
+                        );
+
+                        if (success) {
+                            SceneNavigator.showInfo("Reservation " + reservation.getRequestId() + " updated successfully.");
+                        } else {
+                            SceneNavigator.showError("Update failed. Reservation may not exist.");
+                        }
+                    });
+                });
+            });
         });
     }
 
@@ -336,5 +424,70 @@ public class reservationsUI {
         public String getDateAndTime() { return dateAndTime; }
         public String getIsActive() { return isActive; }
         public Reservations getReservation() { return reservation; }
+    }
+    
+    // Helper method to create date/time picker dialog
+    private Dialog<Pair<LocalDate, LocalTime>> createDateTimePickerDialog(LocalDate initialDate, LocalTime initialTime) {
+        Dialog<Pair<LocalDate, LocalTime>> dialog = new Dialog<>();
+        dialog.setTitle("Select Date and Time");
+        
+        // Create date picker
+        DatePicker datePicker = new DatePicker(initialDate != null ? initialDate : LocalDate.now());
+        
+        // Create hour and minute ComboBoxes
+        ComboBox<Integer> hourBox = new ComboBox<>();
+        ComboBox<Integer> minuteBox = new ComboBox<>();
+        
+        for (int i = 0; i < 24; i++) {
+            hourBox.getItems().add(i);
+        }
+        for (int i = 0; i < 60; i += 15) { // 15-minute intervals
+            minuteBox.getItems().add(i);
+        }
+        
+        // Set initial values
+        if (initialTime != null) {
+            hourBox.setValue(initialTime.getHour());
+            minuteBox.setValue((initialTime.getMinute() / 15) * 15); // Round to nearest 15 minutes
+        } else {
+            LocalTime now = LocalTime.now();
+            hourBox.setValue(now.getHour());
+            minuteBox.setValue((now.getMinute() / 15) * 15);
+        }
+        
+        // Create layout
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(20, 150, 10, 10));
+        
+        grid.add(new Label("Date:"), 0, 0);
+        grid.add(datePicker, 1, 0);
+        grid.add(new Label("Hour:"), 0, 1);
+        grid.add(hourBox, 1, 1);
+        grid.add(new Label("Minute:"), 0, 2);
+        grid.add(minuteBox, 1, 2);
+        
+        dialog.getDialogPane().setContent(grid);
+        
+        // Add OK and Cancel buttons
+        javafx.scene.control.ButtonType okButtonType = new javafx.scene.control.ButtonType("OK", javafx.scene.control.ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(okButtonType, javafx.scene.control.ButtonType.CANCEL);
+        
+        // Convert result to Pair
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton == okButtonType) {
+                LocalDate date = datePicker.getValue();
+                Integer hour = hourBox.getValue();
+                Integer minute = minuteBox.getValue();
+                if (date != null && hour != null && minute != null) {
+                    LocalTime time = LocalTime.of(hour, minute);
+                    return new Pair<>(date, time);
+                }
+            }
+            return null;
+        });
+        
+        return dialog;
     }
 }

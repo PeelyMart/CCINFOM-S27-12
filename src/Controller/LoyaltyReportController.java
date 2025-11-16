@@ -33,19 +33,28 @@ public class LoyaltyReportController {
     public static String generateMonthlyMembersReport(Map<LocalDate, Integer> monthlyNewMembers) {
         StringBuilder sb = new StringBuilder();
 
+        sb.append("═══════════════════════════════════════════════════\n");
+        sb.append("            LOYALTY MEMBERS REPORT\n");
+        sb.append("═══════════════════════════════════════════════════\n\n");
+
         if (monthlyNewMembers == null || monthlyNewMembers.isEmpty()) {
             sb.append("No new members in this period.\n");
             return sb.toString();
         }
 
-        sb.append("New Members by Month:\n");
-        sb.append("------------------------------------\n");
+        sb.append(String.format("%-15s | %10s\n", "Month", "New Members"));
+        sb.append("─────────────────────────────────────\n");
 
-        monthlyNewMembers.forEach((date, count) -> {
-            sb.append(date).append(": ").append(count).append("\n");
-        });
+        int totalMembers = 0;
+        for (Map.Entry<LocalDate, Integer> entry : monthlyNewMembers.entrySet()) {
+            totalMembers += entry.getValue();
+            sb.append(String.format("%-15s | %10d\n", entry.getKey(), entry.getValue()));
+        }
 
-        sb.append("------------------------------------\n");
+        sb.append("─────────────────────────────────────\n");
+        sb.append(String.format("%-15s | %10d\n", "TOTAL", totalMembers));
+        sb.append("═══════════════════════════════════════════════════\n");
+        
         return sb.toString();
     }
 

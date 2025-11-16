@@ -38,11 +38,11 @@
          <font>
             <Font size="17.0" />
          </font></Button>
-        <TextField fx:id="cashierField" layoutX="14.0" layoutY="27.0" prefHeight="27.0" prefWidth="190.0" promptText="cashier:" style="-fx-background-color: #282f47; -fx-text-fill: white;">
+        <TextField fx:id="cashierField" layoutX="14.0" layoutY="27.0" prefHeight="27.0" prefWidth="190.0" promptText="cashier:" style="-fx-background-color: #282f47; -fx-text-fill: WHITE; -fx-prompt-text-fill: WHITE;">
          <font>
             <Font size="13.0" />
          </font></TextField>
-        <TextField fx:id="timeInField" layoutX="14.0" layoutY="63.0" prefHeight="27.0" prefWidth="190.0" promptText="Time In" style="-fx-background-color: #282f47; -fx-text-fill: white;" editable="false">
+        <TextField fx:id="timeInField" layoutX="14.0" layoutY="63.0" prefHeight="27.0" prefWidth="190.0" promptText="Time In" style="-fx-background-color: #282f47; -fx-text-fill: WHITE; -fx-prompt-text-fill: WHITE;" editable="false">
             <font><Font size="13.0" /></font>
         </TextField>
       <Text fill="WHITE" layoutX="57.0" layoutY="216.0" strokeType="OUTSIDE" strokeWidth="0.0" text="TRANSACTIONS" textAlignment="CENTER">

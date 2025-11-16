@@ -44,6 +44,9 @@ public class ReportUI {
     @FXML
     private DatePicker toDatePicker;
 
+    @FXML
+    private Button backButton;
+
     private String activeReport = ""; // "sales" or "loyalty"
 
 
@@ -102,6 +105,12 @@ public class ReportUI {
             reportTextArea.clear();
             loadSalesReport();
         });
+        
+        // Back button
+        if (backButton != null) {
+            backButton.setOnAction(e -> SceneNavigator.switchScene(backButton, "/Resources/MainMenu/dashboard.fxml"));
+        }
+        
         //<---trigger an update when two values are added-->//
         fromDatePicker.valueProperty().addListener((obs, oldVal, newVal) -> updateReport());
         toDatePicker.valueProperty().addListener((obs, oldVal, newVal) -> updateReport());

@@ -33,7 +33,11 @@ public class MenuPerformanceController {
 
     public String generateMenuPerformanceReport(LocalDate start, LocalDate end) {
         StringBuilder sb = new StringBuilder();
-        sb.append("Menu Performance Report for ").append(start).append(" to ").append(end).append(":\n");
+        sb.append("═══════════════════════════════════════════════════\n");
+        sb.append("            MENU PERFORMANCE REPORT\n");
+        sb.append("═══════════════════════════════════════════════════\n");
+        sb.append(String.format("Period: %s to %s\n\n", start, end));
+        
         Map<MenuItem, double[]> report = getMenuPerformance(start, end);
 
         if (!report.isEmpty()) {
@@ -44,18 +48,27 @@ public class MenuPerformanceController {
             }
 
             // Header
-            sb.append(String.format("%-" + maxNameLength + "s | %12s | %12s\n", "Item", "Quantity Sold", "Total Sales"));
-            sb.append("-".repeat(maxNameLength + 27)).append("\n"); // separator line
+            sb.append(String.format("%-" + maxNameLength + "s | %15s | %15s\n", "Item", "Quantity Sold", "Total Sales ($)"));
+            sb.append("─".repeat(maxNameLength + 33)).append("\n");
 
+            double totalSales = 0.0;
+            int totalQuantity = 0;
+            
             // Data rows
             for (Map.Entry<MenuItem, double[]> entry : report.entrySet()) {
                 MenuItem item = entry.getKey();
                 double[] result = entry.getValue();
-                sb.append(String.format("%-" + maxNameLength + "s | %12.0f | %12.2f\n",
+                totalQuantity += (int) result[0];
+                totalSales += result[1];
+                sb.append(String.format("%-" + maxNameLength + "s | %15.0f | $%14.2f\n",
                         item.getMenuName(), result[0], result[1]));
             }
+            
+            sb.append("─".repeat(maxNameLength + 33)).append("\n");
+            sb.append(String.format("%-" + maxNameLength + "s | %15d | $%14.2f\n", "TOTAL", totalQuantity, totalSales));
+            sb.append("═══════════════════════════════════════════════════\n");
         } else {
-            sb.append("Empty set\n");
+            sb.append("No sales data available for this period.\n");
         }
 
         return sb.toString();

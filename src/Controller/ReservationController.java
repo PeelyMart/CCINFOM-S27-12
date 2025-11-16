@@ -33,6 +33,20 @@ public class ReservationController {
         if (existing == null) return false;
 
         existing.setReserveName(newName);
+        existing.setDateAndTime(newTime);
+
+        return dao.updateReservation(existing);
+    }
+    
+    public static boolean editReservation(int requestId, int newTableId, String newName, LocalDateTime newTime, boolean isActive) {
+        ReservationDAO dao = new ReservationDAO();
+        Reservations existing = dao.getReservationById(requestId);
+        if (existing == null) return false;
+
+        existing.setTableId(newTableId);
+        existing.setReserveName(newName);
+        existing.setDateAndTime(newTime);
+        existing.setIsActive(isActive);
 
         return dao.updateReservation(existing);
     }

@@ -52,7 +52,7 @@ public class TransactionMenuUI {
     private void initialize() {
         setupTables();
         loadReservations();
-        loadTableButtons(); // Load dynamic table buttons
+        // Removed loadTableButtons() - table buttons should only be in transactions.fxml
 
         // Button actions
         ordersButton.setOnAction(e -> {
@@ -70,8 +70,9 @@ public class TransactionMenuUI {
             SceneNavigator.switchScene(reservationsButton, "/Resources/Transactions/reservations.fxml");
         });
         backButton.setOnAction(e -> {
-            // Navigate back to dashboard - transactions will show in dashboard content
-            SceneNavigator.switchScene(backButton, "/Resources/MainMenu/dashboard.fxml");
+            // Navigate back to dashboard and load transactions in the dashboard content area
+            Stage stage = (Stage) backButton.getScene().getWindow();
+            SceneNavigator.switchToDashboard(stage);
         });
 
         // Example: dynamic language change

@@ -21,6 +21,32 @@ public class ReservationController {
         return null;
     }
 
+    // For instance methods in DAO, create a DAO instance
+    public static Reservations getReservation(int requestId) {
+        ReservationDAO dao = new ReservationDAO();
+        return dao.getReservationById(requestId);
+    }
+
+    public static boolean editReservation(int requestId, String newName, LocalDateTime newTime) {
+        ReservationDAO dao = new ReservationDAO(); // create DAO instance
+        Reservations existing = dao.getReservationById(requestId); // now this works
+        if (existing == null) return false;
+
+        existing.setReserveName(newName);
+
+        return dao.updateReservation(existing);
+    }
+
+
+    public static boolean deleteReservation(int requestId) {
+        ReservationDAO dao = new ReservationDAO();
+        return dao.deleteReservation(requestId);
+    }
+
+    public static ArrayList<Reservations> getAllReservations() {
+        ReservationDAO dao = new ReservationDAO();
+        return dao.getAllReservations();
+    }
 
     /**
      * This will check all active reservations and check if they are still valid.

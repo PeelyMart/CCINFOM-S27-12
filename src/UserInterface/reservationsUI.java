@@ -1,12 +1,15 @@
 package UserInterface;
 
+import Controller.ReservationController;
+import DAO.ReservationDAO;
+import Model.Reservations;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.AnchorPane;
-import javafx.stage.Stage;
+import javafx.scene.control.TextInputDialog;
+
+import java.time.LocalDateTime;
+import java.util.Optional;
 
 public class reservationsUI {
 
@@ -18,11 +21,11 @@ public class reservationsUI {
 
     @FXML
     private void initialize() {
-        // Hook buttons to actions
-        addButton.setOnAction(e -> openAddReservation());
-        searchButton.setOnAction(e -> SceneNavigator.testClick("SEARCH"));
-        editButton.setOnAction(e -> SceneNavigator.testClick("EDIT"));
-        deleteButton.setOnAction(e -> SceneNavigator.testClick("DELETE"));
+
+        addButton.setOnAction(e -> handleAdd());
+        searchButton.setOnAction(e -> handleSearch());
+        editButton.setOnAction(e -> handleEdit());
+        deleteButton.setOnAction(e -> handleDelete());
 
         if (backButton != null) {
             backButton.setOnAction(e ->
@@ -30,22 +33,118 @@ public class reservationsUI {
         }
     }
 
-    // Method for TextField onAction in FXML
-    @FXML
-    private void searchStaffEntries() {
-        // Placeholder logic for search
-        SceneNavigator.testClick("SEARCH TEXTFIELD: " + searchReservations.getText());
+    // ===================== ADD =====================
+    private void handleAdd() {
+        TextInputDialog tableDialog = new TextInputDialog();
+        tableDialog.setTitle("Add Reservation");
+        tableDialog.setHeaderText("Enter Table ID:");
+        Optional<String> tableInput = tableDialog.showAndWait();
+
+        tableInput.ifPresent(tableStr -> {
+            int tableID;
+            try {
+                tableID = Integer.parseInt(tableStr);
+            } catch (NumberFormatException e) {
+                SceneNavigator.showError("Table ID must be a number.");
+                return;
+            }
+
+            TextInputDialog nameDialog = new TextInputDialog();
+            nameDialog.setTitle("Add Reservation");
+            nameDialog.setHeaderText("Enter Customer Name:");
+            Optional<String> nameInput = nameDialog.showAndWait();
+
+            nameInput.ifPresent(name -> {
+                LocalDateTime time = LocalDateTime.now().plusHours(1);
+                Reservations r = ReservationController.addReservation(tableID, name, time);
+
+                if (r != null) {
+                    SceneNavigator.showInfo(
+                            "Reservation created successfully!\n" +
+                                    "Reservation ID: " + r.getRequestId() + "\n" +
+                                    "Name: " + r.getReserveName() + "\n" +
+                                    "Table: " + r.getTableId() + "\n" +
+                                    "Time: " + r.getDateAndTime()
+                    );
+                } else {
+                    SceneNavigator.showError("Reservation creation failed. Please try again.");
+                }
+            });
+        });
     }
 
-    private void openAddReservation() {
+    // ===================== SEARCH =====================
+    private void handleSearch() {
+        String input = searchReservations.getText();
+        int id;
         try {
-            FXMLLoader loader = new FXMLLoader(getClass()
-                    .getResource("/Resources/Transactions/reservationConfirmation.fxml"));
-            AnchorPane root = loader.load();
-            Stage stage = (Stage) addButton.getScene().getWindow();
-            stage.setScene(new Scene(root));
-        } catch (Exception ex) {
-            ex.printStackTrace();
+            id = Integer.parseInt(input);
+        } catch (NumberFormatException e) {
+            SceneNavigator.showError("Enter a valid numeric Reservation ID to search.");
+            return;
+        }
+
+        Reservations r = ReservationController.getReservation(id);
+
+        if (r != null) {
+            SceneNavigator.showInfo(
+                    "Reservation Found:\n" +
+                            "ID: " + r.getRequestId() + "\n" +
+                            "Name: " + r.getReserveName() + "\n" +
+                            "Table: " + r.getTableId() + "\n" +
+                            "Time: " + r.getDateAndTime()
+            );
+        } else {
+            SceneNavigator.showError("No reservation found with ID: " + id);
+        }
+    }
+
+    // ===================== EDIT =====================
+    private void handleEdit() {
+        String input = searchReservations.getText();
+        int id;
+
+        try {
+            id = Integer.parseInt(input);
+        } catch (NumberFormatException e) {
+            SceneNavigator.showError("Enter a valid numeric Reservation ID to edit.");
+            return;
+        }
+
+        TextInputDialog nameDialog = new TextInputDialog();
+        nameDialog.setTitle("Edit Reservation");
+        nameDialog.setHeaderText("Enter new Customer Name:");
+        Optional<String> nameInput = nameDialog.showAndWait();
+
+        nameInput.ifPresent(newName -> {
+            LocalDateTime newTime = LocalDateTime.now().plusHours(2); // simplified new time
+            boolean success = ReservationController.editReservation(id, newName, newTime);
+
+            if (success) {
+                SceneNavigator.showInfo("Reservation " + id + " updated successfully.");
+            } else {
+                SceneNavigator.showError("Update failed. Reservation may not exist.");
+            }
+        });
+    }
+
+    // ===================== DELETE =====================
+    private void handleDelete() {
+        String input = searchReservations.getText();
+        int id;
+        try {
+            id = Integer.parseInt(input);
+        } catch (NumberFormatException e) {
+            SceneNavigator.showError("Enter a valid numeric Reservation ID to delete.");
+            return;
+        }
+
+        boolean success = ReservationController.deleteReservation(id);
+
+        if (success) {
+            SceneNavigator.showInfo("Reservation " + id + " deleted successfully.");
+        } else {
+            SceneNavigator.showError("Deletion failed. Reservation may not exist.");
         }
     }
 }

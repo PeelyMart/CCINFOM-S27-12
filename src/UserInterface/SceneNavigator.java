@@ -27,4 +27,24 @@ public class SceneNavigator {
         alert.showAndWait();
     }
 
+    public static void showError(String msg) {
+        showAlert(Alert.AlertType.ERROR, "Error", msg);
+    }
+
+    public static void showWarning(String msg) {
+        showAlert(Alert.AlertType.WARNING, "Warning", msg);
+    }
+
+    public static void showInfo(String msg) {
+        showAlert(Alert.AlertType.INFORMATION, "Info", msg);
+    }
+
+    public static void showAlert(Alert.AlertType type, String title, String msg) {
+        Alert alert = new Alert(type);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(msg);
+        alert.showAndWait();
+    }
+
 }

@@ -6,16 +6,20 @@ import Model.Reservations;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputDialog;
+import javafx.scene.control.ChoiceDialog;
 import javafx.scene.control.cell.PropertyValueFactory;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 public class reservationsUI {
@@ -46,6 +50,7 @@ public class reservationsUI {
     
     private ObservableList<ReservationDisplay> reservationsList = FXCollections.observableArrayList();
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+    private Integer currentTableId = null; // Store current table filter
 
     @FXML
     private void initialize() {
@@ -101,6 +106,11 @@ public class reservationsUI {
         ArrayList<Reservations> allReservations = ReservationController.getAllReservations();
         
         for (Reservations r : allReservations) {
+            // Filter by table if currentTableId is set
+            if (currentTableId != null && r.getTableId() != currentTableId) {
+                continue;
+            }
+            
             String id = String.valueOf(r.getRequestId());
             String tableId = String.valueOf(r.getTableId());
             String reserveName = r.getReserveName();
@@ -110,23 +120,50 @@ public class reservationsUI {
             reservationsList.add(new ReservationDisplay(id, tableId, reserveName, dateAndTime, isActive, r));
         }
     }
+    
+    /**
+     * Called by SceneNavigator to set table filter
+     */
+    public void setData(Object data) {
+        if (data instanceof Model.Table) {
+            Model.Table table = (Model.Table) data;
+            currentTableId = table.getTableId();
+            loadAllReservations(); // Reload with table filter
+        } else {
+            currentTableId = null; // Show all reservations
+            loadAllReservations();
+        }
+    }
 
     // ===================== ADD =====================
     @FXML
     private void handleAdd() {
-        TextInputDialog tableDialog = new TextInputDialog();
+        // Get all tables for dropdown
+        List<Model.Table> allTables = DAO.TableDAO.getAllTables();
+        if (allTables == null || allTables.isEmpty()) {
+            SceneNavigator.showError("No tables available.");
+            return;
+        }
+        
+        // Create list of table options
+        List<String> tableOptions = new ArrayList<>();
+        for (Model.Table table : allTables) {
+            tableOptions.add("Table " + table.getTableId() + " (Capacity: " + table.getCapacity() + ")");
+        }
+        
+        // Show dropdown for table selection
+        ChoiceDialog<String> tableDialog = new ChoiceDialog<>(tableOptions.get(0), tableOptions);
         tableDialog.setTitle("Add Reservation");
-        tableDialog.setHeaderText("Enter Table ID:");
-        Optional<String> tableInput = tableDialog.showAndWait();
+        tableDialog.setHeaderText("Select Table:");
+        tableDialog.setContentText("Choose a table:");
+        Optional<String> tableResult = tableDialog.showAndWait();
 
-        tableInput.ifPresent(tableStr -> {
-            int tableID;
-            try {
-                tableID = Integer.parseInt(tableStr);
-            } catch (NumberFormatException e) {
-                SceneNavigator.showError("Table ID must be a number.");
-                return;
-            }
+        tableResult.ifPresent(selectedTable -> {
+            // Extract table ID from selection
+            int tableID = Integer.parseInt(selectedTable.replaceAll("[^0-9]", "").split(" ")[0]);
+            
+            // Store in final variable for use in nested lambda
+            final int finalTableID = tableID;
 
             TextInputDialog nameDialog = new TextInputDialog();
             nameDialog.setTitle("Add Reservation");
@@ -134,8 +171,11 @@ public class reservationsUI {
             Optional<String> nameInput = nameDialog.showAndWait();
 
             nameInput.ifPresent(name -> {
+                // Get date and time with dropdowns
                 LocalDateTime time = LocalDateTime.now().plusHours(1);
-                Reservations r = ReservationController.addReservation(tableID, name, time);
+                
+                // For simplicity, use current time + 1 hour, but you could add date/time pickers
+                Reservations r = ReservationController.addReservation(finalTableID, name, time);
 
                 if (r != null) {
                     SceneNavigator.showInfo(
@@ -155,54 +195,82 @@ public class reservationsUI {
     // ===================== SEARCH =====================
     @FXML
     private void handleSearch() {
-        String input = searchReservations.getText();
-        int id;
-        try {
-            id = Integer.parseInt(input);
-        } catch (NumberFormatException e) {
-            SceneNavigator.showError("Enter a valid numeric Reservation ID to search.");
+        String input = searchReservations.getText().trim();
+        if (input.isEmpty()) {
+            SceneNavigator.showError("Please enter a name or date to search.");
             return;
         }
-
-        Reservations r = ReservationController.getReservation(id);
-
-        if (r != null) {
-            SceneNavigator.showInfo(
-                    "Reservation Found:\n" +
-                            "ID: " + r.getRequestId() + "\n" +
-                            "Name: " + r.getReserveName() + "\n" +
-                            "Table: " + r.getTableId() + "\n" +
-                            "Time: " + r.getDateAndTime().format(DATE_FORMATTER)
-            );
-        } else {
-            SceneNavigator.showError("No reservation found with ID: " + id);
+        
+        ArrayList<Reservations> allReservations = ReservationController.getAllReservations();
+        ArrayList<Reservations> matchingReservations = new ArrayList<>();
+        
+        // Search by name or date
+        String searchLower = input.toLowerCase();
+        for (Reservations r : allReservations) {
+            // Filter by table if set
+            if (currentTableId != null && r.getTableId() != currentTableId) {
+                continue;
+            }
+            
+            // Check if name matches
+            if (r.getReserveName().toLowerCase().contains(searchLower)) {
+                matchingReservations.add(r);
+                continue;
+            }
+            
+            // Check if date matches
+            String dateStr = r.getDateAndTime().format(DATE_FORMATTER);
+            if (dateStr.contains(input)) {
+                matchingReservations.add(r);
+            }
         }
+        
+        if (matchingReservations.isEmpty()) {
+            SceneNavigator.showError("No reservations found matching: " + input);
+            return;
+        }
+        
+        // Filter table view to show only matching reservations
+        reservationsList.clear();
+        for (Reservations r : matchingReservations) {
+            String id = String.valueOf(r.getRequestId());
+            String tableId = String.valueOf(r.getTableId());
+            String reserveName = r.getReserveName();
+            String dateAndTime = r.getDateAndTime().format(DATE_FORMATTER);
+            String isActive = r.getIsActive() ? "Active" : "Inactive";
+            
+            reservationsList.add(new ReservationDisplay(id, tableId, reserveName, dateAndTime, isActive, r));
+        }
+        
+        SceneNavigator.showInfo("Found " + matchingReservations.size() + " reservation(s) matching: " + input);
     }
 
     // ===================== EDIT =====================
     @FXML
     private void handleEdit() {
-        String input = searchReservations.getText();
-        int id;
-
-        try {
-            id = Integer.parseInt(input);
-        } catch (NumberFormatException e) {
-            SceneNavigator.showError("Enter a valid numeric Reservation ID to edit.");
+        ReservationDisplay selected = tableView.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            SceneNavigator.showError("Please select a reservation to edit.");
+            return;
+        }
+        
+        Reservations reservation = selected.getReservation();
+        if (reservation == null) {
+            SceneNavigator.showError("Could not find reservation to edit.");
             return;
         }
 
-        TextInputDialog nameDialog = new TextInputDialog();
+        TextInputDialog nameDialog = new TextInputDialog(reservation.getReserveName());
         nameDialog.setTitle("Edit Reservation");
         nameDialog.setHeaderText("Enter new Customer Name:");
         Optional<String> nameInput = nameDialog.showAndWait();
 
         nameInput.ifPresent(newName -> {
-            LocalDateTime newTime = LocalDateTime.now().plusHours(2); // simplified new time
-            boolean success = ReservationController.editReservation(id, newName, newTime);
+            LocalDateTime newTime = reservation.getDateAndTime(); // Keep original time
+            boolean success = ReservationController.editReservation(reservation.getRequestId(), newName, newTime);
 
             if (success) {
-                SceneNavigator.showInfo("Reservation " + id + " updated successfully.");
+                SceneNavigator.showInfo("Reservation " + reservation.getRequestId() + " updated successfully.");
             } else {
                 SceneNavigator.showError("Update failed. Reservation may not exist.");
             }
@@ -212,21 +280,33 @@ public class reservationsUI {
     // ===================== DELETE =====================
     @FXML
     private void handleDelete() {
-        String input = searchReservations.getText();
-        int id;
-        try {
-            id = Integer.parseInt(input);
-        } catch (NumberFormatException e) {
-            SceneNavigator.showError("Enter a valid numeric Reservation ID to delete.");
+        ReservationDisplay selected = tableView.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            SceneNavigator.showError("Please select a reservation to delete.");
+            return;
+        }
+        
+        Reservations reservation = selected.getReservation();
+        if (reservation == null) {
+            SceneNavigator.showError("Could not find reservation to delete.");
             return;
         }
 
-        boolean success = ReservationController.deleteReservation(id);
+        // Confirm deletion
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Delete Reservation");
+        confirm.setHeaderText("Delete reservation?");
+        confirm.setContentText("Are you sure you want to delete reservation for: " + reservation.getReserveName() + "?");
+        Optional<ButtonType> result = confirm.showAndWait();
 
-        if (success) {
-            SceneNavigator.showInfo("Reservation " + id + " deleted successfully.");
-        } else {
-            SceneNavigator.showError("Deletion failed. Reservation may not exist.");
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            boolean success = ReservationController.deleteReservation(reservation.getRequestId());
+
+            if (success) {
+                SceneNavigator.showInfo("Reservation " + reservation.getRequestId() + " deleted successfully.");
+            } else {
+                SceneNavigator.showError("Deletion failed. Reservation may not exist.");
+            }
         }
     }
     

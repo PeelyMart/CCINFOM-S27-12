@@ -19,11 +19,14 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.ChoiceDialog;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.text.Text;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.LinkedHashMap;
 
 public class OrdersUI {
 
@@ -32,6 +35,9 @@ public class OrdersUI {
 
     @FXML
     private TextField searchOrder;
+
+    @FXML
+    private Text subtotalLabel;
 
     @FXML
     private TableView<OrderItemDisplay> orderItemsTable;
@@ -147,6 +153,9 @@ public class OrdersUI {
             if (orderItemsTable != null) {
                 orderItemsTable.setItems(FXCollections.observableArrayList());
             }
+            if (subtotalLabel != null) {
+                subtotalLabel.setText("Subtotal: $0.00");
+            }
             return;
         }
 
@@ -158,6 +167,9 @@ public class OrdersUI {
             if (orderItemsTable != null) {
                 orderItemsTable.setItems(FXCollections.observableArrayList());
             }
+            if (subtotalLabel != null) {
+                subtotalLabel.setText("Subtotal: $0.00");
+            }
             return;
         }
         
@@ -166,50 +178,90 @@ public class OrdersUI {
             if (orderItemsTable != null) {
                 orderItemsTable.setItems(FXCollections.observableArrayList());
             }
+            if (subtotalLabel != null) {
+                subtotalLabel.setText("Subtotal: $0.00");
+            }
             return;
         }
 
         System.out.println("Loading " + order.getOrderItems().size() + " order items");
-        List<OrderItemDisplay> displayItems = new ArrayList<>();
         
+        // Group items by menu item AND status (both active and completed)
+        // Map: "menuName_active" or "menuName_completed" -> combined quantity
+        Map<String, Integer> groupedItems = new LinkedHashMap<>();
+        Map<String, OrderItem> representativeItems = new LinkedHashMap<>(); // Store one item per group
+        BigDecimal totalSubtotal = BigDecimal.ZERO;
+        
+        // Process ALL items (both active and completed) and group by menu item + status
         for (OrderItem item : order.getOrderItems()) {
-            System.out.println("Processing OrderItem - MenuID: " + item.getMenuId() + ", Qty: " + item.getQuantity() + ", Status: " + item.getStatus());
-            
             MenuItem menuItem = menuItemDAO.getMenuItemById(item.getMenuId());
             String menuName;
             if (menuItem != null) {
                 menuName = menuItem.getMenuName();
-                System.out.println("Found menu item: " + menuName);
             } else {
                 menuName = "Unknown (ID: " + item.getMenuId() + ")";
-                System.out.println("WARNING: Menu item not found for menu_id: " + item.getMenuId());
             }
             
-            String quantity = String.valueOf(item.getQuantity());
+            // Determine status: active or completed
+            boolean isActive = item.getStatus() != null && item.getStatus();
+            String status = isActive ? "active" : "completed";
             
-            // Get status string - show as "active" or "completed"
-            String active;
-            if (item.getStatus() != null && item.getStatus()) {
-                active = "active";
+            // Only add active items to subtotal
+            if (isActive) {
+                totalSubtotal = totalSubtotal.add(item.getSubtotal());
+            }
+            
+            // Create key with menu name and status
+            String key = menuName + "_" + status;
+            
+            // Group by menu item and status
+            if (groupedItems.containsKey(key)) {
+                groupedItems.put(key, groupedItems.get(key) + item.getQuantity());
             } else {
-                active = "completed";
+                groupedItems.put(key, item.getQuantity());
+                representativeItems.put(key, item); // Store first item as representative
             }
-
-            OrderItemDisplay displayItem = new OrderItemDisplay(menuName, quantity, active, item);
+            
+            System.out.println("Added item: " + menuName + " x" + item.getQuantity() + " (" + status + ")");
+        }
+        
+        // Build display items from grouped map - separate rows for active and completed
+        List<OrderItemDisplay> displayItems = new ArrayList<>();
+        for (Map.Entry<String, Integer> entry : groupedItems.entrySet()) {
+            String key = entry.getKey();
+            int totalQuantity = entry.getValue();
+            OrderItem representativeItem = representativeItems.get(key);
+            
+            // Extract menu name and status from key
+            // Key format: "menuName_status" - find last underscore to separate
+            int lastUnderscore = key.lastIndexOf("_");
+            String menuName = key.substring(0, lastUnderscore);
+            String status = key.substring(lastUnderscore + 1);
+            
+            OrderItemDisplay displayItem = new OrderItemDisplay(menuName, String.valueOf(totalQuantity), status, representativeItem);
             displayItems.add(displayItem);
-            System.out.println("Added display item: " + menuName + " x" + quantity + " (" + active + ")");
+            System.out.println("Added grouped display item: " + menuName + " x" + totalQuantity + " (" + status + ")");
         }
 
         System.out.println("Total display items created: " + displayItems.size());
+        
+        // Store in final variables for use in lambda
+        final BigDecimal finalTotalSubtotal = totalSubtotal;
+        final List<OrderItemDisplay> finalDisplayItems = displayItems;
 
         if (orderItemsTable != null) {
             System.out.println("Setting items on TableView...");
             // Use Platform.runLater to ensure UI updates on JavaFX thread
             Platform.runLater(() -> {
                 try {
-                    orderItemsTable.setItems(FXCollections.observableArrayList(displayItems));
-                    System.out.println("✓ TableView updated with " + displayItems.size() + " items");
+                    orderItemsTable.setItems(FXCollections.observableArrayList(finalDisplayItems));
+                    System.out.println("✓ TableView updated with " + finalDisplayItems.size() + " items");
                     System.out.println("✓ TableView.items.size() = " + orderItemsTable.getItems().size());
+                    
+                    // Update subtotal label
+                    if (subtotalLabel != null) {
+                        subtotalLabel.setText("Subtotal: $" + String.format("%.2f", finalTotalSubtotal));
+                    }
                     
                     // Force refresh
                     orderItemsTable.refresh();
@@ -343,130 +395,97 @@ public class OrdersUI {
     private void handleSearch() {
         String input = searchOrder.getText().trim();
         if (input.isEmpty()) {
-            SceneNavigator.showError("Please enter an Order ID or Menu Item name to search.");
+            // If empty, reload all items
+            if (currentOrder != null) {
+                loadOrderItems(currentOrder);
+            }
             return;
         }
         
-        // Try to parse as Order ID first
-        try {
-            int orderId = Integer.parseInt(input);
-            Order order = OrderDB.getWholeOrder(orderId);
-            if (order != null) {
-                currentOrder = order;
-                loadOrderItems(order);
-                SceneNavigator.showInfo("Order " + orderId + " loaded successfully!");
-                return;
+        // Search within current order's items only (filter display)
+        if (currentOrder == null || currentOrder.getOrderItems() == null || currentOrder.getOrderItems().isEmpty()) {
+            SceneNavigator.showError("No order loaded. Please select a table first.");
+            return;
+        }
+        
+        // Filter items in current order by menu item name
+        String searchLower = input.toLowerCase();
+        List<OrderItemDisplay> filteredItems = new ArrayList<>();
+        
+        // Group filtered items by menu item and status
+        Map<String, Integer> groupedItems = new LinkedHashMap<>();
+        Map<String, OrderItem> representativeItems = new LinkedHashMap<>();
+        BigDecimal totalSubtotal = BigDecimal.ZERO;
+        
+        // Filter and group items
+        for (OrderItem item : currentOrder.getOrderItems()) {
+            MenuItem menuItem = menuItemDAO.getMenuItemById(item.getMenuId());
+            String menuName;
+            if (menuItem != null) {
+                menuName = menuItem.getMenuName();
             } else {
-                SceneNavigator.showError("No order found with ID: " + orderId);
-                currentOrder = null;
-                orderItemsTable.setItems(FXCollections.observableArrayList());
-                return;
-            }
-        } catch (NumberFormatException e) {
-            // Not a number, search by menu item name
-        }
-        
-        // Search by menu item name - find orders containing this menu item
-        ArrayList<MenuItem> matchingMenuItems = new ArrayList<>();
-        ArrayList<MenuItem> allMenuItems = menuItemDAO.getAllMenuItems();
-        
-        if (allMenuItems != null) {
-            String searchLower = input.toLowerCase();
-            for (MenuItem item : allMenuItems) {
-                if (item.getMenuName().toLowerCase().contains(searchLower)) {
-                    matchingMenuItems.add(item);
-                }
-            }
-        }
-        
-        if (matchingMenuItems.isEmpty()) {
-            SceneNavigator.showError("No menu items found matching: " + input);
-            return;
-        }
-        
-        // If multiple matches, let user choose
-        if (matchingMenuItems.size() > 1) {
-            List<String> menuNames = new ArrayList<>();
-            for (MenuItem item : matchingMenuItems) {
-                menuNames.add(item.getMenuName());
+                menuName = "Unknown (ID: " + item.getMenuId() + ")";
             }
             
-            ChoiceDialog<String> choiceDialog = new ChoiceDialog<>(menuNames.get(0), menuNames);
-            choiceDialog.setTitle("Multiple Matches");
-            choiceDialog.setHeaderText("Multiple menu items found:");
-            choiceDialog.setContentText("Select the menu item:");
-            Optional<String> result = choiceDialog.showAndWait();
-            
-            if (!result.isPresent()) {
-                return;
+            // Check if menu name matches search
+            if (!menuName.toLowerCase().contains(searchLower)) {
+                continue; // Skip items that don't match
             }
             
-            // Find the selected menu item
-            MenuItem selectedMenuItem = null;
-            for (MenuItem item : matchingMenuItems) {
-                if (item.getMenuName().equals(result.get())) {
-                    selectedMenuItem = item;
-                    break;
-                }
+            // Determine status
+            boolean isActive = item.getStatus() != null && item.getStatus();
+            String status = isActive ? "active" : "completed";
+            
+            // Only add active items to subtotal
+            if (isActive) {
+                totalSubtotal = totalSubtotal.add(item.getSubtotal());
             }
             
-            if (selectedMenuItem != null) {
-                searchOrdersByMenuItem(selectedMenuItem);
-            }
-        } else {
-            // Single match
-            searchOrdersByMenuItem(matchingMenuItems.get(0));
-        }
-    }
-    
-    private void searchOrdersByMenuItem(MenuItem menuItem) {
-        // Get all order items with this menu item
-        List<OrderItem> allOrderItems = OrderitemDAO.getAllOrderItems();
-        List<Integer> orderIds = new ArrayList<>();
-        
-        for (OrderItem item : allOrderItems) {
-            if (item.getMenuId() == menuItem.getMenuId() && !orderIds.contains(item.getOrderId())) {
-                orderIds.add(item.getOrderId());
+            // Create key with menu name and status
+            String key = menuName + "_" + status;
+            
+            // Group by menu item and status
+            if (groupedItems.containsKey(key)) {
+                groupedItems.put(key, groupedItems.get(key) + item.getQuantity());
+            } else {
+                groupedItems.put(key, item.getQuantity());
+                representativeItems.put(key, item);
             }
         }
         
-        if (orderIds.isEmpty()) {
-            SceneNavigator.showError("No orders found containing: " + menuItem.getMenuName());
-            return;
+        // Build display items from grouped map
+        for (Map.Entry<String, Integer> entry : groupedItems.entrySet()) {
+            String key = entry.getKey();
+            int totalQuantity = entry.getValue();
+            OrderItem representativeItem = representativeItems.get(key);
+            
+            // Extract menu name and status from key
+            // Key format: "menuName_status" - find last underscore to separate
+            int lastUnderscore = key.lastIndexOf("_");
+            String menuName = key.substring(0, lastUnderscore);
+            String status = key.substring(lastUnderscore + 1);
+            
+            OrderItemDisplay displayItem = new OrderItemDisplay(menuName, String.valueOf(totalQuantity), status, representativeItem);
+            filteredItems.add(displayItem);
         }
         
-        // If multiple orders, let user choose
-        if (orderIds.size() > 1) {
-            List<String> orderIdStrings = new ArrayList<>();
-            for (Integer id : orderIds) {
-                orderIdStrings.add("Order ID: " + id);
+        // Update table with filtered items
+        final List<OrderItemDisplay> finalFilteredItems = filteredItems;
+        final BigDecimal finalTotalSubtotal = totalSubtotal;
+        
+        Platform.runLater(() -> {
+            orderItemsTable.setItems(FXCollections.observableArrayList(finalFilteredItems));
+            if (subtotalLabel != null) {
+                subtotalLabel.setText("Subtotal: $" + String.format("%.2f", finalTotalSubtotal));
             }
+            orderItemsTable.refresh();
             
-            ChoiceDialog<String> choiceDialog = new ChoiceDialog<>(orderIdStrings.get(0), orderIdStrings);
-            choiceDialog.setTitle("Multiple Orders");
-            choiceDialog.setHeaderText("Multiple orders found with " + menuItem.getMenuName() + ":");
-            choiceDialog.setContentText("Select an order:");
-            Optional<String> result = choiceDialog.showAndWait();
-            
-            if (result.isPresent()) {
-                String selected = result.get();
-                int orderId = Integer.parseInt(selected.replace("Order ID: ", ""));
-                Order order = OrderDB.getWholeOrder(orderId);
-                if (order != null) {
-                    currentOrder = order;
-                    loadOrderItems(order);
-                    SceneNavigator.showInfo("Order " + orderId + " loaded successfully!");
-                }
+            if (filteredItems.isEmpty()) {
+                SceneNavigator.showInfo("No items found matching: " + input);
+            } else {
+                SceneNavigator.showInfo("Found " + filteredItems.size() + " item(s) matching: " + input);
             }
-        } else {
-            // Single order found
-            Order order = OrderDB.getWholeOrder(orderIds.get(0));
-            if (order != null) {
-                currentOrder = order;
-                loadOrderItems(order);
-                SceneNavigator.showInfo("Order " + orderIds.get(0) + " loaded successfully!");
-            }
-        }
+        });
     }
     
     // ===================== DELETE =====================

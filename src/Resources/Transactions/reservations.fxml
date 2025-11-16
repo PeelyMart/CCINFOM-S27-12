@@ -42,6 +42,6 @@
        <Button fx:id="backButton" layoutX="25.0" layoutY="364.0" prefHeight="30.0" prefWidth="100.0" text="← BACK" textFill="WHITE" />
 
        <!-- Search TextField -->
-       <TextField fx:id="searchReservations" layoutX="349.0" layoutY="31.0" onAction="#handleSearch" prefHeight="26.0" prefWidth="193.0" promptText="Search staffID" style="-fx-background-color: #242d4e;" />
+       <TextField fx:id="searchReservations" layoutX="349.0" layoutY="31.0" onAction="#handleSearch" prefHeight="26.0" prefWidth="193.0" promptText="Search by Name or Date" style="-fx-background-color: #242d4e; -fx-text-fill: white;" />
    </children>
 </AnchorPane>

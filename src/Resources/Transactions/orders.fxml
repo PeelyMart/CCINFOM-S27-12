@@ -16,25 +16,29 @@
             <TableColumn fx:id="activeColumn" prefWidth="95.199951171875" text="ACTIVE" />
         </columns>
       </TableView>
-      <Button fx:id="addButton" layoutX="348.0" layoutY="388.0" mnemonicParsing="false" prefHeight="26.0" prefWidth="76.0" text="➕" textFill="WHITE">
+      <Button fx:id="addButton" layoutX="348.0" layoutY="388.0" mnemonicParsing="false" prefHeight="26.0" prefWidth="76.0" text="➕ ADD" textFill="WHITE">
          <font>
-            <Font size="18.0" />
+            <Font size="11.0" />
          </font></Button>
-      <Button fx:id="searchButton" layoutX="424.0" layoutY="26.0" mnemonicParsing="false" prefHeight="54.0" prefWidth="76.0" text="🔍" textFill="WHITE">
+      <Button fx:id="searchButton" layoutX="424.0" layoutY="26.0" mnemonicParsing="false" prefHeight="54.0" prefWidth="76.0" text="🔍 SEARCH" textFill="WHITE">
          <font>
-            <Font size="18.0" />
+            <Font size="11.0" />
          </font></Button>
-      <Button fx:id="deleteButton" layoutX="386.0" layoutY="388.0" mnemonicParsing="false" prefHeight="26.0" prefWidth="76.0" text="❌" textFill="WHITE">
+      <Button fx:id="deleteButton" layoutX="386.0" layoutY="388.0" mnemonicParsing="false" prefHeight="26.0" prefWidth="76.0" text="❌ DELETE" textFill="WHITE">
          <font>
-            <Font size="17.0" />
+            <Font size="11.0" />
          </font></Button>
-      <Button fx:id="editButton" layoutX="424.0" layoutY="388.0" mnemonicParsing="false" prefHeight="26.0" prefWidth="76.0" text="🔔" textFill="WHITE">
+      <Button fx:id="editButton" layoutX="424.0" layoutY="388.0" mnemonicParsing="false" prefHeight="26.0" prefWidth="76.0" text="🔔 EDIT" textFill="WHITE">
          <font>
-            <Font size="17.0" />
+            <Font size="11.0" />
          </font></Button>
       <Text fill="WHITE" layoutX="32.0" layoutY="65.0" strokeType="OUTSIDE" strokeWidth="0.0" text="📜 ORDER">
          <font>
             <Font name="Verdana Bold" size="40.0" />
+         </font></Text>
+      <Text fx:id="subtotalLabel" fill="WHITE" layoutX="32.0" layoutY="398.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Subtotal: $0.00">
+         <font>
+            <Font name="Verdana Bold" size="14.0" />
          </font></Text>
        <Button fx:id="payButton" layoutX="198.0" layoutY="441.0" mnemonicParsing="false" prefHeight="53.0" prefWidth="110.0" text="PAY" textFill="WHITE">
          <font>
@@ -45,6 +49,6 @@
             <Font name="Verdana Bold" size="16.0" />
          </font></Button>
        <!-- Search TextField -->
-       <TextField fx:id="searchOrder" layoutX="253.0" layoutY="42.0" onAction="#searchStaffEntries" prefHeight="26.0" prefWidth="193.0" promptText="Search by Order ID or Menu Item" style="-fx-background-color: #242d4e; -fx-text-fill: white;" />
+       <TextField fx:id="searchOrder" layoutX="253.0" layoutY="42.0" onAction="#searchStaffEntries" prefHeight="26.0" prefWidth="193.0" promptText="Search items in current order" style="-fx-background-color: #242d4e; -fx-text-fill: white;" />
    </children>
 </AnchorPane>

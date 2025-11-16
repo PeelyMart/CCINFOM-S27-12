@@ -2,17 +2,21 @@ package UserInterface;
 
 import DAO.MenuItemDAO;
 import DAO.OrderDB;
+import DAO.TableDAO;
 import Model.MenuItem;
 import Model.Order;
 import Model.OrderItem;
+import Model.OrderStatus;
 import Model.Table;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.FlowPane;
 import javafx.stage.Stage;
 
 import java.util.List;
@@ -32,6 +36,9 @@ public class TransactionMenuUI {
     @FXML private TableColumn<ReservationDisplay, String> reservationDateColumn;
     @FXML private TableColumn<ReservationDisplay, String> reservationQtyColumn;
 
+    // Table buttons container (will be added to FXML)
+    @FXML private FlowPane tableButtonsPane;
+
     // ObservableLists for tables
     private final ObservableList<OrderDisplay> ordersList = FXCollections.observableArrayList();
     private final ObservableList<ReservationDisplay> reservationsList = FXCollections.observableArrayList();
@@ -43,6 +50,7 @@ public class TransactionMenuUI {
     private void initialize() {
         setupTables();
         loadReservations();
+        loadTableButtons(); // Load dynamic table buttons
 
         // Button actions
         ordersButton.setOnAction(e -> {
@@ -70,6 +78,82 @@ public class TransactionMenuUI {
         if (currentOrder != null) {
             loadCurrentTableOrder();
         }
+    }
+    
+    private void loadTableButtons() {
+        if (tableButtonsPane == null) {
+            // If FlowPane is not in FXML, we'll create one dynamically
+            // For now, just log warning
+            System.out.println("WARNING: tableButtonsPane not found in FXML");
+            return;
+        }
+        
+        // Clear existing buttons
+        tableButtonsPane.getChildren().clear();
+        
+        // Get all tables
+        List<Table> allTables = TableDAO.getAllTables();
+        if (allTables == null || allTables.isEmpty()) {
+            System.out.println("No tables found");
+            return;
+        }
+        
+        // Create a button for each table
+        for (Table table : allTables) {
+            Button tableButton = new Button("Table " + table.getTableId());
+            tableButton.setPrefWidth(70);
+            tableButton.setPrefHeight(35);
+            tableButton.setPadding(new Insets(5));
+            tableButton.setFont(javafx.scene.text.Font.font(12));
+            
+            // Check if table has an active order (status = OPEN)
+            Order activeOrder = getActiveOrderForTable(table.getTableId());
+            boolean hasActiveOrder = (activeOrder != null && activeOrder.getStatus() == OrderStatus.OPEN);
+            
+            // Set button color: Green = available (no active order), Red = occupied (has active order)
+            if (hasActiveOrder) {
+                tableButton.setStyle("-fx-background-color: #dc3545; -fx-text-fill: white; -fx-font-weight: bold;"); // Red
+            } else {
+                tableButton.setStyle("-fx-background-color: #28a745; -fx-text-fill: white; -fx-font-weight: bold;"); // Green
+            }
+            
+            // Set button action: when clicked, load the active order for this table
+            final int tableId = table.getTableId(); // Make effectively final
+            tableButton.setOnAction(e -> {
+                Order order = getActiveOrderForTable(tableId);
+                if (order != null) {
+                    currentOrder = order;
+                    loadCurrentTableOrder();
+                    // Navigate to orders screen
+                    Stage stage = (Stage) tableButton.getScene().getWindow();
+                    SceneNavigator.switchNoButton(stage, "/Resources/Transactions/orders.fxml", order);
+                } else {
+                    // No active order, show message
+                    SceneNavigator.showInfo("Table " + tableId + " has no active order.");
+                }
+            });
+            
+            tableButtonsPane.getChildren().add(tableButton);
+        }
+    }
+    
+    /**
+     * Get the active (OPEN) order for a table
+     */
+    private Order getActiveOrderForTable(int tableId) {
+        Order order = OrderDB.getWholeOrderByTable(tableId);
+        // Check if order exists and is OPEN (active)
+        if (order != null && order.getStatus() == OrderStatus.OPEN) {
+            // Also check if it has active order items
+            if (order.getOrderItems() != null) {
+                boolean hasActiveItems = order.getOrderItems().stream()
+                    .anyMatch(item -> item.getStatus() != null && item.getStatus());
+                if (hasActiveItems) {
+                    return order;
+                }
+            }
+        }
+        return null;
     }
 
     private void setupTables() {

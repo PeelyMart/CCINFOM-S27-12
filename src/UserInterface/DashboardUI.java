@@ -30,6 +30,10 @@ public class DashboardUI {
     @FXML
     private TextArea printGreeting;
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> a26444b2c371c5e591cab5a2534effe218399b4c
     @FXML
     private Stage mainStage;
 

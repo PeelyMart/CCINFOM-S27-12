@@ -147,20 +147,17 @@ public class reservationsUI {
     // ===================== ADD =====================
     @FXML
     private void handleAdd() {
-        // Get all tables for dropdown
         List<Model.Table> allTables = DAO.TableDAO.getAllTables();
         if (allTables == null || allTables.isEmpty()) {
             SceneNavigator.showError("No tables available.");
             return;
         }
-        
-        // Create list of table options
+
         List<String> tableOptions = new ArrayList<>();
         for (Model.Table table : allTables) {
             tableOptions.add("Table " + table.getTableId() + " (Capacity: " + table.getCapacity() + ")");
         }
-        
-        // Show dropdown for table selection
+
         ChoiceDialog<String> tableDialog = new ChoiceDialog<>(tableOptions.get(0), tableOptions);
         tableDialog.setTitle("Add Reservation");
         tableDialog.setHeaderText("Select Table:");
@@ -168,10 +165,8 @@ public class reservationsUI {
         Optional<String> tableResult = tableDialog.showAndWait();
 
         tableResult.ifPresent(selectedTable -> {
-            // Extract table ID from selection
-            int tableID = Integer.parseInt(selectedTable.replaceAll("[^0-9]", "").split(" ")[0]);
-            
-            // Store in final variable for use in nested lambda
+
+            int tableID = Integer.parseInt(selectedTable.split(" ")[1]);
             final int finalTableID = tableID;
 
             TextInputDialog nameDialog = new TextInputDialog();
@@ -180,28 +175,44 @@ public class reservationsUI {
             Optional<String> nameInput = nameDialog.showAndWait();
 
             nameInput.ifPresent(name -> {
-                // Get date and time with dropdowns
-                LocalDateTime time = LocalDateTime.now().plusHours(1);
-                
-                // For simplicity, use current time + 1 hour, but you could add date/time pickers
-                Reservations r = ReservationController.addReservation(finalTableID, name, time);
 
-                if (r != null) {
-                    SceneNavigator.showInfo(
-                            "Reservation created successfully!\n" +
-                                    "Reservation ID: " + r.getRequestId() + "\n" +
-                                    "Name: " + r.getReserveName() + "\n" +
-                                    "Table: " + r.getTableId() + "\n" +
-                                    "Time: " + r.getDateAndTime().format(DATE_FORMATTER)
+                Dialog<Pair<LocalDate, LocalTime>> dateTimeDialog =
+                        createDateTimePickerDialog(LocalDate.now(), LocalTime.now().plusHours(1));
+
+                dateTimeDialog.setTitle("Add Reservation");
+                dateTimeDialog.setHeaderText("Select Date and Time:");
+
+                Optional<Pair<LocalDate, LocalTime>> dateTimeResult = dateTimeDialog.showAndWait();
+
+                dateTimeResult.ifPresent(dateTime -> {
+
+                    LocalDate date = dateTime.getKey();
+                    LocalTime time = dateTime.getValue();
+                    LocalDateTime dateTimeFinal = LocalDateTime.of(date, time);
+
+                    Reservations r = ReservationController.addReservation(
+                            finalTableID,
+                            name,
+                            dateTimeFinal
                     );
-                } else {
-                    SceneNavigator.showError("Reservation creation failed. Please try again.");
-                }
+
+                    if (r != null) {
+                        SceneNavigator.showInfo(
+                                "Reservation created successfully!\n" +
+                                        "Reservation ID: " + r.getRequestId() + "\n" +
+                                        "Name: " + r.getReserveName() + "\n" +
+                                        "Table: " + r.getTableId() + "\n" +
+                                        "Time: " + r.getDateAndTime().format(DATE_FORMATTER)
+                        );
+                    } else {
+                        SceneNavigator.showError("Reservation creation failed. Please try again.");
+                    }
+                });
             });
         });
     }
 
-    // ===================== SEARCH =====================
+
     @FXML
     private void handleSearch() {
         String input = searchReservations.getText().trim();
@@ -276,7 +287,7 @@ public class reservationsUI {
             SceneNavigator.showError("Please select a reservation to edit.");
             return;
         }
-        
+
         Reservations reservation = selected.getReservation();
         if (reservation == null) {
             SceneNavigator.showError("Could not find reservation to edit.");
@@ -289,8 +300,7 @@ public class reservationsUI {
             SceneNavigator.showError("No tables available.");
             return;
         }
-        
-        // Create list of table options
+
         List<String> tableOptions = new ArrayList<>();
         int currentTableIndex = 0;
         for (int i = 0; i < allTables.size(); i++) {
@@ -300,8 +310,7 @@ public class reservationsUI {
                 currentTableIndex = i;
             }
         }
-        
-        // Step 1: Select table
+
         ChoiceDialog<String> tableDialog = new ChoiceDialog<>(tableOptions.get(currentTableIndex), tableOptions);
         tableDialog.setTitle("Edit Reservation");
         tableDialog.setHeaderText("Select Table:");
@@ -309,49 +318,47 @@ public class reservationsUI {
         Optional<String> tableResult = tableDialog.showAndWait();
 
         tableResult.ifPresent(selectedTable -> {
-            // Extract table ID from selection
-            int newTableID = Integer.parseInt(selectedTable.replaceAll("[^0-9]", "").split(" ")[0]);
+
+            int newTableID = Integer.parseInt(selectedTable.split(" ")[1]);
             final int finalTableID = newTableID;
 
-            // Step 2: Enter name
             TextInputDialog nameDialog = new TextInputDialog(reservation.getReserveName());
             nameDialog.setTitle("Edit Reservation");
             nameDialog.setHeaderText("Enter Customer Name:");
             Optional<String> nameInput = nameDialog.showAndWait();
 
             nameInput.ifPresent(newName -> {
-                // Step 3: Select date and time using DatePicker and time ComboBoxes
                 Dialog<Pair<LocalDate, LocalTime>> dateTimeDialog = createDateTimePickerDialog(
-                    reservation.getDateAndTime().toLocalDate(),
-                    reservation.getDateAndTime().toLocalTime()
+                        reservation.getDateAndTime().toLocalDate(),
+                        reservation.getDateAndTime().toLocalTime()
                 );
                 dateTimeDialog.setTitle("Edit Reservation");
                 dateTimeDialog.setHeaderText("Select Date and Time:");
-                
+
                 Optional<Pair<LocalDate, LocalTime>> dateTimeResult = dateTimeDialog.showAndWait();
 
                 dateTimeResult.ifPresent(dateTime -> {
                     LocalDate selectedDate = dateTime.getKey();
                     LocalTime selectedTime = dateTime.getValue();
                     LocalDateTime newTime = LocalDateTime.of(selectedDate, selectedTime);
-                    
-                    // Step 4: Select activity status
+
                     ChoiceDialog<String> statusDialog = new ChoiceDialog<>(
-                        reservation.getIsActive() ? "Active" : "Inactive",
-                        "Active", "Inactive");
+                            reservation.getIsActive() ? "Active" : "Inactive",
+                            "Active", "Inactive"
+                    );
                     statusDialog.setTitle("Edit Reservation");
                     statusDialog.setHeaderText("Select Status:");
                     Optional<String> statusInput = statusDialog.showAndWait();
 
                     statusInput.ifPresent(statusStr -> {
                         boolean isActive = "Active".equals(statusStr);
-                        
+
                         boolean success = ReservationController.editReservation(
-                            reservation.getRequestId(), 
-                            finalTableID, 
-                            newName, 
-                            newTime, 
-                            isActive
+                                reservation.getRequestId(),
+                                finalTableID,
+                                newName,
+                                newTime,
+                                isActive
                         );
 
                         if (success) {
@@ -364,6 +371,7 @@ public class reservationsUI {
             });
         });
     }
+
 
     // ===================== DELETE =====================
     @FXML

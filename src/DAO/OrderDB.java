@@ -95,12 +95,14 @@ public class OrderDB {
 
 
     public static Order getWholeOrderByTable(int tableId) {
-        String headerQuery = "SELECT * FROM order_header WHERE table_id = ?";
+        // Only return OPEN orders - closed orders should not be associated with tables
+        String headerQuery = "SELECT * FROM order_header WHERE table_id = ? AND status = ?";
 
         try (Connection conn = DB.getConnection();
              PreparedStatement headerStmt = conn.prepareStatement(headerQuery)) {
 
-            headerStmt.setInt(1, tableId );
+            headerStmt.setInt(1, tableId);
+            headerStmt.setString(2, OrderStatus.OPEN.toSqlString());
             ResultSet rsHeader = headerStmt.executeQuery();
 
             if (rsHeader.next()) {
@@ -149,5 +151,41 @@ public class OrderDB {
             e.printStackTrace();
         }
         return orders;
+    }
+    
+    /**
+     * Updates the total cost of an order in the database
+     */
+    public static boolean updateOrderTotal(int orderId, BigDecimal totalCost) {
+        String sql = "UPDATE order_header SET total_cost = ? WHERE order_id = ?";
+        try (Connection conn = DB.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setBigDecimal(1, totalCost);
+            stmt.setInt(2, orderId);
+            
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+    
+    /**
+     * Updates the order status in the database
+     */
+    public static boolean updateOrderStatus(int orderId, OrderStatus status) {
+        String sql = "UPDATE order_header SET status = ? WHERE order_id = ?";
+        try (Connection conn = DB.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setString(1, status.toSqlString());
+            stmt.setInt(2, orderId);
+            
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 }

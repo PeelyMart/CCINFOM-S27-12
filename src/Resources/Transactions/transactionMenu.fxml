@@ -42,6 +42,10 @@
          <font>
             <Font name="Verdana Bold" size="16.0" />
          </font></Text>
+      <Text fx:id="paxText" fill="WHITE" layoutX="32.0" layoutY="48.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Pax: 0">
+         <font>
+            <Font name="Verdana" size="14.0" />
+         </font></Text>
       <Text fill="WHITE" layoutX="312.0" layoutY="86.0" strokeType="OUTSIDE" strokeWidth="0.0" text="RESERVATIONS">
          <font>
             <Font name="Verdana" size="12.0" />

@@ -79,10 +79,12 @@ public class TableDAO {
             ResultSet rs = stmt.executeQuery();
 
             if (rs.next()) {
+                int id = rs.getInt("table_id");
                 int capacity = rs.getInt("capacity");
                 boolean tableStatus = rs.getBoolean("is_available");
 
-                return new Table(capacity, tableStatus);
+                Table table = new Table(id, capacity, tableStatus);
+                return table;
             }
         } catch (SQLException e) {
             e.printStackTrace();

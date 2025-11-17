@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 
 public class PaymentControl {
 
-    public static int initiatePayment(Order currentOrder, int customerId){
+    public static int initiatePayment(Order currentOrder, Integer customerId){
         if(currentOrder.getTotalCost().equals(BigDecimal.valueOf(0.00))) {
             return -1;
         }
@@ -19,10 +19,25 @@ public class PaymentControl {
         Payment currPay = new Payment();
         currPay.setOrderId(currentOrder.getOrderId());
         currPay.setAmountPaid(currentOrder.getTotalCost().doubleValue());
-        currPay.setPaymentMethod(currentOrder.getPaymentMethod());
+        
+        // Ensure payment method is set (default to DEBIT if null)
+        Payment.PaymentMethod paymentMethod = currentOrder.getPaymentMethod();
+        if (paymentMethod == null) {
+            paymentMethod = Payment.PaymentMethod.DEBIT; // Default payment method
+        }
+        currPay.setPaymentMethod(paymentMethod);
+        
         currPay.setPaymentDate(LocalDateTime.now());
         currPay.setStaffId(currentOrder.getStaffId());
-        currPay.setLoyalCustomerId(customerId);
+        
+        // Only set loyalCustomerId if customerId is not null and > 0
+        // Pass null to Payment object if no valid customer ID (for non-members)
+        if (customerId != null && customerId > 0) {
+            currPay.setLoyalCustomerId(customerId);
+        } else {
+            currPay.setLoyalCustomerId(null);
+        }
+        
         currPay.setActive(true);
         
         PaymentDAO paymentDAO = new PaymentDAO();
@@ -32,9 +47,11 @@ public class PaymentControl {
             return 0;
         }
 
-        //reflection of points
-        int points = calculateLoyaltyPoints(currentOrder.getTotalCost());
-        LoyaltymemberDAO.addPoints(customerId, points);
+        // Only add loyalty points if there's a valid customer ID
+        if (customerId != null && customerId > 0) {
+            int points = calculateLoyaltyPoints(currentOrder.getTotalCost());
+            LoyaltymemberDAO.addPoints(customerId, points);
+        }
         return 1;
     }
 

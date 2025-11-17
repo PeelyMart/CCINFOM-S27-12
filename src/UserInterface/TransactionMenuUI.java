@@ -43,6 +43,17 @@ public class TransactionMenuUI {
     
     // Table number display
     @FXML private javafx.scene.text.Text tableNumberText;
+    
+    // Pax (party size) display
+    @FXML private javafx.scene.text.Text paxText;
+    
+    private int currentTableId;
+    private int currentPax = 0; // Default to 0, will be set when order is created or table is selected
+    private static int pendingPax = 0; // Temporary storage for pax when taking a new table
+    
+    public static void setPendingPax(int pax) {
+        pendingPax = pax;
+    }
 
     // ObservableLists for tables
     private final ObservableList<OrderDisplay> ordersList = FXCollections.observableArrayList();
@@ -59,13 +70,17 @@ public class TransactionMenuUI {
 
         // Button actions
         ordersButton.setOnAction(e -> {
-            // Navigate to orders screen with current order (if available)
+            // Navigate to orders screen with current order or table
+            Stage stage = (Stage) ordersButton.getScene().getWindow();
             if (currentOrder != null) {
-                Stage stage = (Stage) ordersButton.getScene().getWindow();
                 SceneNavigator.switchNoButton(stage, "/Resources/Transactions/orders.fxml", currentOrder);
+            } else if (currentTableId > 0) {
+                // Pass table info so order can be created when first item is added
+                Table table = new Table();
+                table.setTableId(currentTableId);
+                SceneNavigator.switchNoButton(stage, "/Resources/Transactions/orders.fxml", table);
             } else {
-                // Navigate to orders screen without order data
-                SceneNavigator.switchScene(ordersButton, "/Resources/Transactions/orders.fxml");
+                SceneNavigator.showError("No table or order selected.");
             }
         });
         reservationsButton.setOnAction(e -> {
@@ -118,9 +133,8 @@ public class TransactionMenuUI {
             Order activeOrder = getActiveOrderForTable(table.getTableId());
             boolean hasActiveOrder = (activeOrder != null && activeOrder.getStatus() == OrderStatus.OPEN);
             
-            // Set button color: Green = available (no active order), Red = occupied (has active order)
             if (hasActiveOrder) {
-                tableButton.setStyle("-fx-background-color: #818589; -fx-text-fill: white; -fx-font-weight: bold;"); // Red
+                tableButton.setStyle("-fx-background-color: #818589; -fx-text-fill: white; -fx-font-weight: bold;"); 
             } else {
                 tableButton.setStyle("-fx-background-color: #28a745; -fx-text-fill: white; -fx-font-weight: bold;"); // Green
             }
@@ -182,22 +196,39 @@ public class TransactionMenuUI {
         
         if (data instanceof Order) {
             currentOrder = (Order) data;
+            currentTableId = currentOrder.getTableId();
             System.out.println("Order received - Order ID: " + currentOrder.getOrderId() + ", Table ID: " + currentOrder.getTableId());
             updateTableNumberDisplay(currentOrder.getTableId());
+            updatePaxDisplay(); // Update pax display
             loadCurrentTableOrder();
             loadReservations(); // Load reservations when order is set
         } else if (data instanceof Table) {
             Table table = (Table) data;
+            currentTableId = table.getTableId();
             System.out.println("Table received - Table ID: " + table.getTableId());
             updateTableNumberDisplay(table.getTableId());
+            
+            // Check if there's a pending pax value (set when taking a new table)
+            if (pendingPax > 0) {
+                currentPax = pendingPax;
+                pendingPax = 0; // Reset after using
+                updatePaxDisplay();
+            }
+            
             // Fetch order for this table
             Order order = OrderDB.getWholeOrderByTable(table.getTableId());
             if (order != null) {
                 currentOrder = order;
+                updatePaxDisplay(); // Update pax display (will calculate from items)
                 loadCurrentTableOrder();
                 loadReservations(); // Load reservations when order is set
             } else {
                 System.out.println("No order found for table " + table.getTableId());
+                currentOrder = null;
+                // Keep currentPax if it was set from pendingPax, otherwise set to 0
+                if (currentPax == 0) {
+                    updatePaxDisplay();
+                }
                 ordersList.clear();
             }
         }
@@ -209,11 +240,30 @@ public class TransactionMenuUI {
         }
     }
     
+    private void updatePaxDisplay() {
+        if (paxText != null) {
+            if (currentOrder != null && currentOrder.getOrderItems() != null && !currentOrder.getOrderItems().isEmpty()) {
+                // Calculate total quantity of all items as pax
+                int totalPax = currentOrder.getOrderItems().stream()
+                    .mapToInt(item -> item.getQuantity())
+                    .sum();
+                currentPax = totalPax;
+                paxText.setText("Pax: " + totalPax);
+            } else if (currentPax > 0) {
+                // Use manually entered pax if no order items yet
+                paxText.setText("Pax: " + currentPax);
+            } else {
+                paxText.setText("Pax: 0");
+            }
+        }
+    }
+    
     private void loadCurrentTableOrder() {
         ordersList.clear();
         
         if (currentOrder == null || currentOrder.getOrderItems() == null || currentOrder.getOrderItems().isEmpty()) {
             System.out.println("No order items to display");
+            updatePaxDisplay(); // Update pax to 0
             return;
         }
         
@@ -234,6 +284,7 @@ public class TransactionMenuUI {
         }
         
         System.out.println("Loaded " + ordersList.size() + " order items");
+        updatePaxDisplay(); // Update pax after loading items
     }
 
     private void loadOrders() {

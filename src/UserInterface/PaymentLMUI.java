@@ -84,8 +84,8 @@ public class PaymentLMUI {
             orderSummaryArea.setText(summary.toString());
         }
 
-        // Calculate original total
-        originalTotal = currentOrder.getTotalCost() != null ? currentOrder.getTotalCost() : BigDecimal.ZERO;
+        // Calculate original total from completed items only (status = false means completed)
+        originalTotal = calculateTotalFromCompletedItems();
         
         // If member is already set, apply discount
         if (currentMember != null) {
@@ -93,6 +93,36 @@ public class PaymentLMUI {
         } else {
             updateTotalDisplay();
         }
+    }
+    
+    private BigDecimal calculateTotalFromCompletedItems() {
+        if (currentOrder == null || currentOrder.getOrderItems() == null) {
+            return BigDecimal.ZERO;
+        }
+        
+        BigDecimal total = BigDecimal.ZERO;
+        for (Model.OrderItem item : currentOrder.getOrderItems()) {
+            // Only count completed items (status = false means completed)
+            if (item.getStatus() != null && !item.getStatus()) {
+                total = total.add(item.getSubtotal());
+            }
+        }
+        return total;
+    }
+    
+    private boolean areAllItemsCompleted() {
+        if (currentOrder == null || currentOrder.getOrderItems() == null || currentOrder.getOrderItems().isEmpty()) {
+            return false;
+        }
+        
+        // Check if all items are completed (status = false)
+        for (Model.OrderItem item : currentOrder.getOrderItems()) {
+            if (item.getStatus() != null && item.getStatus()) {
+                // Found an active item, not all are completed
+                return false;
+            }
+        }
+        return true;
     }
 
     @FXML
@@ -147,7 +177,8 @@ public class PaymentLMUI {
             return;
         }
 
-        originalTotal = currentOrder.getTotalCost() != null ? currentOrder.getTotalCost() : BigDecimal.ZERO;
+        // Recalculate from completed items
+        originalTotal = calculateTotalFromCompletedItems();
         
         if (currentMember != null && "active".equalsIgnoreCase(currentMember.getStatus())) {
             // Apply 10% discount
@@ -188,9 +219,40 @@ public class PaymentLMUI {
                     SceneNavigator.showError("No order data available.");
                     return;
                 }
+                
+                // Reload order to get latest data
+                Order refreshedOrder = OrderDB.getWholeOrder(currentOrder.getOrderId());
+                if (refreshedOrder != null) {
+                    currentOrder = refreshedOrder;
+                }
+                
+                // Check if all items are completed before allowing payment
+                if (!areAllItemsCompleted()) {
+                    SceneNavigator.showError("Cannot proceed to payment: Not all order items are completed.\nPlease mark all items as completed before payment.");
+                    return;
+                }
+                
+                // Recalculate total from completed items
+                originalTotal = calculateTotalFromCompletedItems();
+                if (currentMember != null) {
+                    applyDiscount();
+                } else {
+                    finalTotal = originalTotal;
+                }
+                
+                if (finalTotal.compareTo(BigDecimal.ZERO) <= 0) {
+                    SceneNavigator.showError("Cannot proceed to payment: Order total is zero.");
+                    return;
+                }
+                
                 if (currentMember == null) {
                     SceneNavigator.showWarning("No member selected. Proceeding as non-member.");
                 }
+                
+                // Update order total in database
+                currentOrder.setTotalCost(finalTotal);
+                OrderDB.updateOrderTotal(currentOrder.getOrderId(), finalTotal);
+                
                 // Store member info in order or pass separately
                 javafx.stage.Stage stage = (javafx.stage.Stage) payButton.getScene().getWindow();
                 // Pass both order and member data (we'll create a wrapper or pass order with member ID stored)

@@ -66,11 +66,42 @@ public class PaymentNormalUI {
             orderSummaryArea.setText(summary.toString());
         }
 
-        finalTotal = currentOrder.getTotalCost() != null ? currentOrder.getTotalCost() : BigDecimal.ZERO;
+        // Calculate total from completed items only (status = false means completed)
+        finalTotal = calculateTotalFromCompletedItems();
         
         if (totalArea != null) {
             totalArea.setText(String.format("$%.2f", finalTotal));
         }
+    }
+    
+    private BigDecimal calculateTotalFromCompletedItems() {
+        if (currentOrder == null || currentOrder.getOrderItems() == null) {
+            return BigDecimal.ZERO;
+        }
+        
+        BigDecimal total = BigDecimal.ZERO;
+        for (Model.OrderItem item : currentOrder.getOrderItems()) {
+            // Only count completed items (status = false means completed)
+            if (item.getStatus() != null && !item.getStatus()) {
+                total = total.add(item.getSubtotal());
+            }
+        }
+        return total;
+    }
+    
+    private boolean areAllItemsCompleted() {
+        if (currentOrder == null || currentOrder.getOrderItems() == null || currentOrder.getOrderItems().isEmpty()) {
+            return false;
+        }
+        
+        // Check if all items are completed (status = false)
+        for (Model.OrderItem item : currentOrder.getOrderItems()) {
+            if (item.getStatus() != null && item.getStatus()) {
+                // Found an active item, not all are completed
+                return false;
+            }
+        }
+        return true;
     }
 
     @FXML
@@ -78,10 +109,35 @@ public class PaymentNormalUI {
 
         if (payButton != null) {
             payButton.setOnAction(e -> {
-                if (currentOrder == null || finalTotal == null) {
+                if (currentOrder == null) {
                     SceneNavigator.showError("No order data available.");
                     return;
                 }
+                
+                // Reload order to get latest data
+                Order refreshedOrder = OrderDB.getWholeOrder(currentOrder.getOrderId());
+                if (refreshedOrder != null) {
+                    currentOrder = refreshedOrder;
+                }
+                
+                // Check if all items are completed before allowing payment
+                if (!areAllItemsCompleted()) {
+                    SceneNavigator.showError("Cannot proceed to payment: Not all order items are completed.\nPlease mark all items as completed before payment.");
+                    return;
+                }
+                
+                // Recalculate total from completed items
+                finalTotal = calculateTotalFromCompletedItems();
+                
+                if (finalTotal.compareTo(BigDecimal.ZERO) <= 0) {
+                    SceneNavigator.showError("Cannot proceed to payment: Order total is zero.");
+                    return;
+                }
+                
+                // Update order total in database
+                currentOrder.setTotalCost(finalTotal);
+                OrderDB.updateOrderTotal(currentOrder.getOrderId(), finalTotal);
+                
                 javafx.stage.Stage stage = (javafx.stage.Stage) payButton.getScene().getWindow();
                 SceneNavigator.switchNoButton(stage, "/Resources/Transactions/paymentMethod.fxml", currentOrder);
             });

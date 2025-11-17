@@ -34,16 +34,33 @@ public class PaymentMethodUI {
             return;
         }
 
+        // Reload order to get latest data
         Order refreshedOrder = OrderDB.getWholeOrder(currentOrder.getOrderId());
         if (refreshedOrder != null) {
             currentOrder = refreshedOrder;
         }
 
-        finalTotal = currentOrder.getTotalCost() != null ? currentOrder.getTotalCost() : BigDecimal.ZERO;
+        // Calculate total from completed items only (status = false means completed)
+        finalTotal = calculateTotalFromCompletedItems();
         
         if (balanceArea != null) {
-            balanceArea.setText(String.format("₱%.2f", finalTotal));
+            balanceArea.setText(String.format("$%.2f", finalTotal));
         }
+    }
+    
+    private BigDecimal calculateTotalFromCompletedItems() {
+        if (currentOrder == null || currentOrder.getOrderItems() == null) {
+            return BigDecimal.ZERO;
+        }
+        
+        BigDecimal total = BigDecimal.ZERO;
+        for (Model.OrderItem item : currentOrder.getOrderItems()) {
+            // Only count completed items (status = false means completed)
+            if (item.getStatus() != null && !item.getStatus()) {
+                total = total.add(item.getSubtotal());
+            }
+        }
+        return total;
     }
 
     @FXML

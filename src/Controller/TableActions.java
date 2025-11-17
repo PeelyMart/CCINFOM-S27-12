@@ -19,14 +19,15 @@ public class TableActions {
 
     public static void initateTable(Table currTb, int staffInCharge){
         /*
-            TODO:
             1. Access table
-            2. Set as taken
+            2. Set as taken (update in database)
             3. call openOrder
-            4.
          */
         currTb.setTableStatus(false); //table is now taken
+        // Update table status in database
+        TableDAO tableDAO = new TableDAO();
+        tableDAO.updateTable(currTb);
+        // Create the order
         OrderController.openOrder(currTb.getTableId(), staffInCharge);
-        //TODO decide what to output if we need the actual openOrder
     }
 }

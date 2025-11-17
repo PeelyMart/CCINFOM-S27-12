@@ -9,10 +9,15 @@ import Model.Table;
 import Model.Staff;
 import Controller.UserService;
 import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.TextInputDialog;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.TilePane;
 import javafx.stage.Stage;
+import java.util.Optional;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 
@@ -24,6 +29,9 @@ public class TransactionsUI {
 
     @FXML
     private FlowPane tableContainer;
+    
+    // Use TilePane for better column control
+    private TilePane tilePane;
     
     private static final int COLUMNS = 5;
 
@@ -39,25 +47,8 @@ public class TransactionsUI {
             return;
         }
 
+        // Load tables when initialized - this will be called fresh each time the screen loads
         loadTablesFromDB();
-        
-        // Refresh buttons when scene becomes visible (using Platform.runLater to ensure scene is set)
-        javafx.application.Platform.runLater(() -> {
-            if (tableContainer != null && tableContainer.getScene() != null) {
-                tableContainer.getScene().windowProperty().addListener((obs, oldWindow, newWindow) -> {
-                    if (newWindow != null && newWindow instanceof Stage) {
-                        Stage stage = (Stage) newWindow;
-                        // Refresh when window is shown
-                        stage.setOnShown(e -> loadTablesFromDB());
-                    }
-                });
-                // Also set for current window if already set
-                if (tableContainer.getScene().getWindow() != null && tableContainer.getScene().getWindow() instanceof Stage) {
-                    Stage stage = (Stage) tableContainer.getScene().getWindow();
-                    stage.setOnShown(e -> loadTablesFromDB());
-                }
-            }
-        });
     }
     
     /**
@@ -74,82 +65,138 @@ public class TransactionsUI {
         Collections.sort(tables, Comparator.comparingInt(Table::getTableId));
         
         tableContainer.getChildren().clear();
-        // Force wrap at exactly 5 columns: 5 buttons * 90px + 4 gaps * 20px = 450 + 80 = 530px
-        // Set both prefWidth and maxWidth to force wrapping at 5 columns
-        double wrapWidth = COLUMNS * 90 + (COLUMNS - 1) * 20; // 530px for exactly 5 columns with 20px gaps
-        tableContainer.setHgap(20);
-        tableContainer.setVgap(20);
-        tableContainer.setPrefWidth(wrapWidth);
-        tableContainer.setMaxWidth(wrapWidth);
         
-        // Debug: Print table info
+        // Create TilePane with exactly 5 columns for better control
+        if (tilePane == null) {
+            tilePane = new TilePane();
+            tilePane.setPrefColumns(COLUMNS);
+            tilePane.setHgap(20);
+            tilePane.setVgap(20);
+            tableContainer.getChildren().add(tilePane);
+        } else {
+            tilePane.getChildren().clear();
+        }
+        
+        // Debug: Print table info and create buttons in one pass
         System.out.println("=== Loading Tables ===");
         for (Table t : tables) {
+            // Query order once per table
             Order activeOrder = OrderDB.getWholeOrderByTable(t.getTableId());
-            System.out.println("Table " + t.getTableId() + " - Status: " + t.getTableStatus());
+            boolean hasOpenOrder = (activeOrder != null);
+            boolean isTableAvailable = t.getTableStatus(); // true = available, false = taken
+            
+            // Debug output
+            System.out.println("Table " + t.getTableId() + " - Status: " + isTableAvailable + ", Has Open Order: " + hasOpenOrder);
             if (activeOrder != null) {
                 System.out.println("  Order ID: " + activeOrder.getOrderId() + ", Status: " + activeOrder.getStatus());
-                if (activeOrder.getOrderItems() != null) {
-                    long activeItems = activeOrder.getOrderItems().stream()
-                        .filter(item -> item.getStatus() != null && item.getStatus())
-                        .count();
-                    System.out.println("  Active Items: " + activeItems);
-                }
             } else {
-                System.out.println("  No order found");
+                System.out.println("  No open order found");
             }
-        }
-
-        for (Table t : tables) {
+            
+            // Create button
             Button tableButton = new Button(String.valueOf(t.getTableId()));
             tableButton.setPrefSize(90, 90);
             tableButton.setMinSize(90, 90);
             tableButton.setMaxSize(90, 90);
-            tableButton.setFont(javafx.scene.text.Font.font(18));
+            tableButton.setFont(javafx.scene.text.Font.font(14));
             tableButton.setWrapText(false);
 
-            // Check if table has an OPEN order (unavailable)
-            // Logic: IF TABLE HAS ORDER_ID with OPEN status = UNAVAILABLE = RED
-            //        IF TABLE HAS CLOSED ORDER/NO ACTIVE ORDER = AVAILABLE = GREEN
-            Order order = OrderDB.getWholeOrderByTable(t.getTableId());
-            boolean hasOpenOrder = false;
-            if (order != null && order.getStatus() == OrderStatus.OPEN) {
-                hasOpenOrder = true;
-            }
-            
-            // Red = has OPEN order (unavailable), Green = CLOSED order or no order (available)
-            if (hasOpenOrder) {
-                // Red = has OPEN order (table is unavailable)
-                tableButton.setStyle("-fx-background-color: #f44336; -fx-text-fill: white; -fx-background-radius: 50; -fx-border-radius: 50; -fx-font-weight: bold;");
+            // Set button color based on table availability and order status
+            // Grey = table is taken (unavailable) OR has OPEN order
+            // Green = table is available AND no OPEN order
+            if (!isTableAvailable || hasOpenOrder) {
+                // Grey = table is taken or has OPEN order (unavailable)
+                tableButton.setStyle("-fx-background-color: #808080; -fx-text-fill: white; -fx-background-radius: 50; -fx-border-radius: 50; -fx-font-weight: bold; -fx-font-size: 14px;");
             } else {
-                // Green = CLOSED order or no order (table is available)
-                tableButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-background-radius: 50; -fx-border-radius: 50; -fx-font-weight: bold;");
+                // Green = table is available and no OPEN order
+                tableButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-background-radius: 50; -fx-border-radius: 50; -fx-font-weight: bold; -fx-font-size: 14px;");
             }
 
             tableButton.setOnAction(e -> handleTableClick(t));
-            tableContainer.getChildren().add(tableButton);
+            tilePane.getChildren().add(tableButton);
         }
     }
 
     private void handleTableClick(Table table) {
         Stage stage = (Stage) tableContainer.getScene().getWindow(); // get current stage
 
-        if (!table.getTableStatus()) { // table occupied
-            Order order = OrderDB.getWholeOrderByTable(table.getTableId());
-            if (order != null) {
-                SceneNavigator.switchNoButton(stage, "/Resources/Transactions/transactionMenu.fxml", order);
-            } else {
-                SceneNavigator.showInfo("No order found for Table " + table.getTableId());
-            }
+        // Always refresh the table data from database before checking
+        TableDAO tableDAO = new TableDAO();
+        Table freshTable = tableDAO.getTableById(table.getTableId());
+        if (freshTable == null) {
+            SceneNavigator.showError("Table not found in database.");
             return;
         }
 
-        // table available → take it
-        TableActions.initateTable(table, currentStaffId);
-        loadTablesFromDB();
+        // Check if table has an active order first
+        Order existingOrder = OrderDB.getWholeOrderByTable(freshTable.getTableId());
+        if (existingOrder != null) {
+            // Table has active order → navigate directly to it (no confirmation needed)
+            SceneNavigator.switchNoButton(stage, "/Resources/Transactions/transactionMenu.fxml", existingOrder);
+            return;
+        }
 
-        // pass table to TransactionMenuUI
-        SceneNavigator.switchNoButton(stage, "/Resources/Transactions/transactionMenu.fxml", table);
+        // Table has no active order - check if it's available
+        if (!freshTable.getTableStatus()) { 
+            // Table is marked as taken but has no order (shouldn't happen, but handle it)
+            SceneNavigator.showInfo("Table " + freshTable.getTableId() + " is marked as taken but has no active order.");
+            // Refresh buttons
+            loadTablesFromDB();
+            return;
+        }
+
+        // table available and no active order → ask for confirmation and pax
+        Alert confirmDialog = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmDialog.setTitle("Take Table");
+        confirmDialog.setHeaderText("Take Table " + freshTable.getTableId() + "?");
+        confirmDialog.setContentText("Do you want to take this table?");
+        
+        ButtonType yesButton = new ButtonType("Yes");
+        ButtonType noButton = new ButtonType("No");
+        confirmDialog.getButtonTypes().setAll(yesButton, noButton);
+        
+        Optional<ButtonType> confirmResult = confirmDialog.showAndWait();
+        if (confirmResult.isPresent() && confirmResult.get() == yesButton) {
+            // Ask for pax
+            TextInputDialog paxDialog = new TextInputDialog("1");
+            paxDialog.setTitle("Party Size");
+            paxDialog.setHeaderText("How many pax?");
+            paxDialog.setContentText("Enter number of people:");
+            
+            Optional<String> paxResult = paxDialog.showAndWait();
+            if (paxResult.isPresent() && !paxResult.get().trim().isEmpty()) {
+                try {
+                    int pax = Integer.parseInt(paxResult.get().trim());
+                    if (pax <= 0) {
+                        SceneNavigator.showError("Pax must be greater than 0.");
+                        return;
+                    }
+                    
+                    // Mark table as taken
+                    freshTable.setTableStatus(false);
+                    tableDAO.updateTable(freshTable);
+                    
+                    // Store pax temporarily in TransactionMenuUI static variable
+                    TransactionMenuUI.setPendingPax(pax);
+                    
+                    // Pass table to TransactionMenuUI (pax will be picked up from static variable)
+                    SceneNavigator.switchNoButton(stage, "/Resources/Transactions/transactionMenu.fxml", freshTable);
+                    
+                    // Refresh buttons to show updated color
+                    loadTablesFromDB();
+                    
+                } catch (NumberFormatException e) {
+                    SceneNavigator.showError("Please enter a valid number for pax.");
+                    return;
+                }
+            } else {
+                // User cancelled pax input
+                return;
+            }
+        } else {
+            // User cancelled taking the table
+            return;
+        }
     }
 
 }

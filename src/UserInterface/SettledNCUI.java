@@ -5,6 +5,7 @@ import Controller.UserService;
 import DAO.OrderDB;
 import Model.Order;
 import Model.OrderStatus;
+import Model.Payment;
 import Model.Staff;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -43,10 +44,14 @@ public class SettledNCUI {
         Order refreshedOrder = OrderDB.getWholeOrder(currentOrder.getOrderId());
         if (refreshedOrder != null) {
             currentOrder = refreshedOrder;
+            // Recalculate total based on active items
+            Controller.OrderController.updateTotal(currentOrder);
+            // Update total in database
+            OrderDB.updateOrderTotal(currentOrder.getOrderId(), currentOrder.getTotalCost());
         }
 
-        // Get total due
-        totalDue = currentOrder.getTotalCost() != null ? currentOrder.getTotalCost() : BigDecimal.ZERO;
+        // Get total due - only count completed items (status = false)
+        totalDue = calculateTotalFromCompletedItems();
 
         // Display payment method and total in notes area
         if (notesArea != null) {
@@ -61,6 +66,36 @@ public class SettledNCUI {
             );
             notesArea.setText(display);
         }
+    }
+    
+    private BigDecimal calculateTotalFromCompletedItems() {
+        if (currentOrder == null || currentOrder.getOrderItems() == null) {
+            return BigDecimal.ZERO;
+        }
+        
+        BigDecimal total = BigDecimal.ZERO;
+        for (Model.OrderItem item : currentOrder.getOrderItems()) {
+            // Only count completed items (status = false means completed)
+            if (item.getStatus() != null && !item.getStatus()) {
+                total = total.add(item.getSubtotal());
+            }
+        }
+        return total;
+    }
+    
+    private boolean areAllItemsCompleted() {
+        if (currentOrder == null || currentOrder.getOrderItems() == null || currentOrder.getOrderItems().isEmpty()) {
+            return false;
+        }
+        
+        // Check if all items are completed (status = false)
+        for (Model.OrderItem item : currentOrder.getOrderItems()) {
+            if (item.getStatus() != null && item.getStatus()) {
+                // Found an active item, not all are completed
+                return false;
+            }
+        }
+        return true;
     }
 
     @FXML
@@ -104,6 +139,33 @@ public class SettledNCUI {
             SceneNavigator.showError("No order data available.");
             return;
         }
+        
+        // Preserve payment method before reloading (it's not stored in database)
+        Payment.PaymentMethod savedPaymentMethod = currentOrder.getPaymentMethod();
+        
+        // Reload order to get latest data
+        Order refreshedOrder = OrderDB.getWholeOrder(currentOrder.getOrderId());
+        if (refreshedOrder != null) {
+            currentOrder = refreshedOrder;
+            // Restore payment method (it's not stored in database, so restore from original)
+            if (savedPaymentMethod != null) {
+                currentOrder.setPaymentMethod(savedPaymentMethod);
+            }
+        }
+
+        // Check if all items are completed before allowing payment
+        if (!areAllItemsCompleted()) {
+            SceneNavigator.showError("Cannot process payment: Not all order items are completed.\nPlease mark all items as completed before payment.");
+            return;
+        }
+
+        // Recalculate total from completed items
+        totalDue = calculateTotalFromCompletedItems();
+        
+        if (totalDue.compareTo(BigDecimal.ZERO) <= 0) {
+            SceneNavigator.showError("Cannot process payment: Order total is zero.");
+            return;
+        }
 
         // Get current staff
         Staff currentStaff = UserService.getCurrentUser();
@@ -112,12 +174,19 @@ public class SettledNCUI {
             return;
         }
 
-        // Update order total cost
+        // Ensure payment method is set (should be set from PaymentMethodUI, but check just in case)
+        if (currentOrder.getPaymentMethod() == null) {
+            // Default to DEBIT if not set
+            currentOrder.setPaymentMethod(Payment.PaymentMethod.DEBIT);
+        }
+        
+        // Update order total cost in database
         currentOrder.setTotalCost(totalDue);
         currentOrder.setStaffId(currentStaff.getStaffId());
+        OrderDB.updateOrderTotal(currentOrder.getOrderId(), totalDue);
 
-        // Record payment (as non-member for now - member info would be passed separately if needed)
-        int paymentResult = PaymentControl.initiatePayment(currentOrder, 0); // 0 = non-member
+        // Record payment (as non-member - pass null for customerId)
+        int paymentResult = PaymentControl.initiatePayment(currentOrder, null); // null = non-member
 
         if (paymentResult == -1) {
             SceneNavigator.showError("Cannot process payment: Order total is zero.");
@@ -127,7 +196,7 @@ public class SettledNCUI {
             return;
         }
 
-        // Close order (update status to CLOSED)
+        // Close order (update status to CLOSED and table status)
         closeOrder();
 
         // Show success message
@@ -154,18 +223,20 @@ public class SettledNCUI {
     }
 
     private void closeOrder() {
-        // Update order status to CLOSED
-        String sql = "UPDATE order_header SET status = ? WHERE order_id = ?";
-        try (java.sql.Connection conn = DAO.DB.getConnection();
-             java.sql.PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
-            stmt.setString(1, OrderStatus.CLOSED.toSqlString());
-            stmt.setInt(2, currentOrder.getOrderId());
-            stmt.executeUpdate();
-            
-        } catch (java.sql.SQLException e) {
-            System.err.println("Error closing order: " + e.getMessage());
-            e.printStackTrace();
+        // Update order status to CLOSED in database
+        boolean orderClosed = OrderDB.updateOrderStatus(currentOrder.getOrderId(), OrderStatus.CLOSED);
+        
+        if (!orderClosed) {
+            System.err.println("Error closing order: Failed to update order status");
+            return;
+        }
+        
+        // Update table status to available
+        DAO.TableDAO tableDAO = new DAO.TableDAO();
+        Model.Table table = tableDAO.getTableById(currentOrder.getTableId());
+        if (table != null) {
+            table.setTableStatus(true); // Table is now available
+            tableDAO.updateTable(table);
         }
     }
 }

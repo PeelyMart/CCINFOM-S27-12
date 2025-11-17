@@ -6,6 +6,9 @@ import DAO.OrderitemDAO;
 import Model.MenuItem;
 import Model.Order;
 import Model.OrderItem;
+import Model.Table;
+import Model.Staff;
+import Controller.UserService;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -57,6 +60,8 @@ public class OrdersUI {
     private MenuItemDAO menuItemDAO = new MenuItemDAO();
     private OrderitemDAO orderitemDAO = new OrderitemDAO();
     private Order currentOrder; // Store the current order
+    private int currentTableId = 0; // Store table ID if order doesn't exist yet
+    private int currentStaffId = 0; // Store staff ID for creating new orders
 
     @FXML
     private void initialize() {
@@ -129,9 +134,17 @@ public class OrdersUI {
      */
     public void setData(Object data) {
         System.out.println("OrdersUI.setData() called with: " + (data != null ? data.getClass().getName() : "null"));
+        
+        // Get current staff ID
+        Staff currentStaff = UserService.getCurrentUser();
+        if (currentStaff != null) {
+            currentStaffId = currentStaff.getStaffId();
+        }
+        
         if (data instanceof Order) {
             Order order = (Order) data;
             currentOrder = order;
+            currentTableId = order.getTableId();
             System.out.println("Order received - Order ID: " + order.getOrderId() + ", Table ID: " + order.getTableId());
             System.out.println("Order items count: " + (order.getOrderItems() != null ? order.getOrderItems().size() : 0));
             
@@ -144,8 +157,23 @@ public class OrdersUI {
                 setupTableViewColumns(); // Ensure columns are set up
                 loadOrderItems(order);
             }
+        } else if (data instanceof Table) {
+            Table table = (Table) data;
+            currentTableId = table.getTableId();
+            currentOrder = null; // No order exists yet
+            System.out.println("Table received - Table ID: " + table.getTableId() + " (No order exists yet)");
+            
+            // Update table number display
+            if (tableNumberText != null) {
+                tableNumberText.setText("Table: " + table.getTableId());
+            }
+            
+            // Clear order items table
+            if (orderItemsTable != null) {
+                orderItemsTable.getItems().clear();
+            }
         } else {
-            System.out.println("Data is not an Order instance: " + (data != null ? data.getClass().getName() : "null"));
+            System.out.println("Data is not an Order or Table instance: " + (data != null ? data.getClass().getName() : "null"));
         }
     }
 
@@ -281,9 +309,28 @@ public class OrdersUI {
     }
     
     private void handleAdd() {
+        // If no order exists, create one when first item is added
         if (currentOrder == null) {
-            SceneNavigator.showError("No order selected. Please search for an order first.");
-            return;
+            if (currentTableId == 0) {
+                SceneNavigator.showError("No table selected. Please select a table first.");
+                return;
+            }
+            
+            // Create new order for this table
+            int newOrderId = OrderDB.newOrder(currentTableId, currentStaffId);
+            if (newOrderId == -1) {
+                SceneNavigator.showError("Failed to create order. Please try again.");
+                return;
+            }
+            
+            // Load the newly created order
+            currentOrder = OrderDB.getWholeOrder(newOrderId);
+            if (currentOrder == null) {
+                SceneNavigator.showError("Failed to load created order. Please try again.");
+                return;
+            }
+            
+            System.out.println("Created new order ID: " + newOrderId + " for table " + currentTableId);
         }
         
         ArrayList<MenuItem> allMenuItems = menuItemDAO.getAllMenuItems();

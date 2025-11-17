@@ -36,6 +36,10 @@
          <font>
             <Font name="Verdana Bold" size="40.0" />
          </font></Text>
+      <Text fx:id="tableNumberText" fill="WHITE" layoutX="32.0" layoutY="26.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Table: -">
+         <font>
+            <Font name="Verdana Bold" size="14.0" />
+         </font></Text>
       <Text fx:id="subtotalLabel" fill="WHITE" layoutX="32.0" layoutY="398.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Subtotal: $0.00">
          <font>
             <Font name="Verdana Bold" size="14.0" />

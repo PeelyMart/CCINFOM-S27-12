@@ -40,6 +40,9 @@ public class TransactionMenuUI {
 
     // Table buttons container (will be added to FXML)
     @FXML private FlowPane tableButtonsPane;
+    
+    // Table number display
+    @FXML private javafx.scene.text.Text tableNumberText;
 
     // ObservableLists for tables
     private final ObservableList<OrderDisplay> ordersList = FXCollections.observableArrayList();
@@ -104,11 +107,11 @@ public class TransactionMenuUI {
         
         // Create a button for each table
         for (Table table : allTables) {
-            Button tableButton = new Button(String.valueOf(table.getTableId()));
-            tableButton.setPrefWidth(50);
+            Button tableButton = new Button("Table " + table.getTableId());
+            tableButton.setPrefWidth(90);
             tableButton.setPrefHeight(50);
             tableButton.setPadding(new Insets(5));
-            tableButton.setFont(javafx.scene.text.Font.font(14));
+            tableButton.setFont(javafx.scene.text.Font.font(12));
             tableButton.setStyle("-fx-background-radius: 50; -fx-border-radius: 50;");
             
             // Check if table has an active order (status = OPEN)
@@ -117,7 +120,7 @@ public class TransactionMenuUI {
             
             // Set button color: Green = available (no active order), Red = occupied (has active order)
             if (hasActiveOrder) {
-                tableButton.setStyle("-fx-background-color: #dc3545; -fx-text-fill: white; -fx-font-weight: bold;"); // Red
+                tableButton.setStyle("-fx-background-color: #818589; -fx-text-fill: white; -fx-font-weight: bold;"); // Red
             } else {
                 tableButton.setStyle("-fx-background-color: #28a745; -fx-text-fill: white; -fx-font-weight: bold;"); // Green
             }
@@ -180,11 +183,13 @@ public class TransactionMenuUI {
         if (data instanceof Order) {
             currentOrder = (Order) data;
             System.out.println("Order received - Order ID: " + currentOrder.getOrderId() + ", Table ID: " + currentOrder.getTableId());
+            updateTableNumberDisplay(currentOrder.getTableId());
             loadCurrentTableOrder();
             loadReservations(); // Load reservations when order is set
         } else if (data instanceof Table) {
             Table table = (Table) data;
             System.out.println("Table received - Table ID: " + table.getTableId());
+            updateTableNumberDisplay(table.getTableId());
             // Fetch order for this table
             Order order = OrderDB.getWholeOrderByTable(table.getTableId());
             if (order != null) {
@@ -195,6 +200,12 @@ public class TransactionMenuUI {
                 System.out.println("No order found for table " + table.getTableId());
                 ordersList.clear();
             }
+        }
+    }
+    
+    private void updateTableNumberDisplay(int tableId) {
+        if (tableNumberText != null) {
+            tableNumberText.setText("Table: " + tableId);
         }
     }
     

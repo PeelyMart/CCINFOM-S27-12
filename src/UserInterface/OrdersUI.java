@@ -38,6 +38,9 @@ public class OrdersUI {
 
     @FXML
     private Text subtotalLabel;
+    
+    @FXML
+    private Text tableNumberText;
 
     @FXML
     private TableView<OrderItemDisplay> orderItemsTable;
@@ -131,6 +134,11 @@ public class OrdersUI {
             currentOrder = order;
             System.out.println("Order received - Order ID: " + order.getOrderId() + ", Table ID: " + order.getTableId());
             System.out.println("Order items count: " + (order.getOrderItems() != null ? order.getOrderItems().size() : 0));
+            
+            // Update table number display
+            if (tableNumberText != null) {
+                tableNumberText.setText("Table: " + order.getTableId());
+            }
             
             if (orderItemsTable != null) {
                 setupTableViewColumns(); // Ensure columns are set up
@@ -315,6 +323,12 @@ public class OrdersUI {
             
             if (selectedMenuItem == null) {
                 SceneNavigator.showError("Menu item not found.");
+                return;
+            }
+            
+            // Check if menu item is available
+            if (selectedMenuItem.getStatus() == null || !selectedMenuItem.getStatus()) {
+                SceneNavigator.showError("Cannot add unavailable menu item: " + selectedMenuItem.getMenuName());
                 return;
             }
             
@@ -536,19 +550,42 @@ public class OrdersUI {
             return;
         }
         
-        OrderItem itemToEdit = selected.getOrderItem();
-        if (itemToEdit == null || itemToEdit.getOrderItemId() <= 0) {
+        OrderItem representativeItem = selected.getOrderItem();
+        if (representativeItem == null || representativeItem.getOrderItemId() <= 0) {
             SceneNavigator.showError("Could not find order item to edit.");
             return;
         }
         
-        int currentQuantity = itemToEdit.getQuantity();
-        boolean currentIsActive = itemToEdit.getStatus() != null && itemToEdit.getStatus();
+        // Get all order items that match this menu item and status (since they're grouped)
+        String menuName = selected.getMenuItemName();
+        String currentStatus = selected.getActive();
+        int totalQuantity = Integer.parseInt(selected.getQuantity());
+        boolean currentIsActive = currentStatus.equals("active");
+        
+        // Find all OrderItems that match this menu item and status
+        List<OrderItem> matchingItems = new ArrayList<>();
+        if (currentOrder != null && currentOrder.getOrderItems() != null) {
+            for (OrderItem item : currentOrder.getOrderItems()) {
+                MenuItem menuItem = menuItemDAO.getMenuItemById(item.getMenuId());
+                if (menuItem != null && menuItem.getMenuName().equals(menuName)) {
+                    boolean itemIsActive = item.getStatus() != null && item.getStatus();
+                    String itemStatus = itemIsActive ? "active" : "completed";
+                    if (itemStatus.equals(currentStatus)) {
+                        matchingItems.add(item);
+                    }
+                }
+            }
+        }
+        
+        if (matchingItems.isEmpty()) {
+            SceneNavigator.showError("Could not find matching order items.");
+            return;
+        }
         
         // First, ask for quantity to toggle
         TextInputDialog quantityDialog = new TextInputDialog("1");
         quantityDialog.setTitle("Edit Order Item Status");
-        quantityDialog.setHeaderText("Change status for: " + selected.getMenuItemName() + " (Current Qty: " + currentQuantity + ")");
+        quantityDialog.setHeaderText("Change status for: " + menuName + " (Current Qty: " + totalQuantity + ")");
         quantityDialog.setContentText("Enter quantity to toggle status:");
         Optional<String> quantityResult = quantityDialog.showAndWait();
         
@@ -566,8 +603,8 @@ public class OrdersUI {
                 return;
             }
             
-            if (quantityToToggle > currentQuantity) {
-                SceneNavigator.showError("Quantity cannot exceed current quantity (" + currentQuantity + ").");
+            if (quantityToToggle > totalQuantity) {
+                SceneNavigator.showError("Quantity cannot exceed current quantity (" + totalQuantity + ").");
                 return;
             }
             
@@ -580,7 +617,7 @@ public class OrdersUI {
             
             ChoiceDialog<String> statusDialog = new ChoiceDialog<>(newStatusDefault, statusOptions);
             statusDialog.setTitle("Edit Order Item Status");
-            statusDialog.setHeaderText("Change " + quantityToToggle + " of " + selected.getMenuItemName() + " to:");
+            statusDialog.setHeaderText("Change " + quantityToToggle + " of " + menuName + " to:");
             statusDialog.setContentText("Select status:");
             Optional<String> statusResult = statusDialog.showAndWait();
             
@@ -588,56 +625,64 @@ public class OrdersUI {
                 boolean isActive = newStatus.equals("active");
                 
                 // Get menu item for price calculation
-                MenuItem menuItem = menuItemDAO.getMenuItemById(itemToEdit.getMenuId());
+                MenuItem menuItem = menuItemDAO.getMenuItemById(representativeItem.getMenuId());
                 if (menuItem == null) {
                     SceneNavigator.showError("Menu item not found.");
                     return;
                 }
                 
                 BigDecimal itemPrice = BigDecimal.valueOf(menuItem.getPrice());
-                BigDecimal toggleSubtotal = itemPrice.multiply(BigDecimal.valueOf(quantityToToggle));
                 
-                if (quantityToToggle == currentQuantity) {
-                    // Toggle all items - just update the existing item
-                    itemToEdit.setStatus(isActive);
-                    boolean success = orderitemDAO.updateOrderItem(itemToEdit);
-                    if (success) {
-                        SceneNavigator.showInfo("Order item status updated to " + newStatus + "!");
-                        refreshCurrentOrder();
-                    } else {
-                        SceneNavigator.showError("Failed to update order item status.");
-                    }
-                } else {
-                    // Partial toggle - create new item with new status, reduce existing item
-                    // First, update existing item quantity
-                    int remainingQuantity = currentQuantity - quantityToToggle;
-                    BigDecimal remainingSubtotal = itemPrice.multiply(BigDecimal.valueOf(remainingQuantity));
+                // Process items to toggle
+                int remainingToToggle = quantityToToggle;
+                boolean allSuccess = true;
+                
+                for (OrderItem item : matchingItems) {
+                    if (remainingToToggle <= 0) break;
                     
-                    itemToEdit.setQuantity(remainingQuantity);
-                    itemToEdit.setSubtotal(remainingSubtotal);
-                    // Keep original status for remaining items
+                    int itemQuantity = item.getQuantity();
                     
-                    // Create new order item with toggled status
-                    OrderItem newItem = new OrderItem();
-                    newItem.setOrderId(itemToEdit.getOrderId());
-                    newItem.setMenuId(itemToEdit.getMenuId());
-                    newItem.setQuantity(quantityToToggle);
-                    newItem.setSubtotal(toggleSubtotal);
-                    newItem.setStatus(isActive);
-                    
-                    // Update existing item first, then add new item
-                    boolean updateSuccess = orderitemDAO.updateOrderItem(itemToEdit);
-                    if (updateSuccess) {
-                        boolean addSuccess = orderitemDAO.addOrderItem(newItem);
-                        if (addSuccess) {
-                            SceneNavigator.showInfo("Updated " + quantityToToggle + " item(s) to " + newStatus + "!");
-                            refreshCurrentOrder();
-                        } else {
-                            SceneNavigator.showError("Failed to create new order item.");
+                    if (itemQuantity <= remainingToToggle) {
+                        // Toggle entire item
+                        item.setStatus(isActive);
+                        item.setSubtotal(itemPrice.multiply(BigDecimal.valueOf(itemQuantity)));
+                        if (!orderitemDAO.updateOrderItem(item)) {
+                            allSuccess = false;
                         }
+                        remainingToToggle -= itemQuantity;
                     } else {
-                        SceneNavigator.showError("Failed to update order item.");
+                        // Partial toggle - split the item
+                        int remainingQuantity = itemQuantity - remainingToToggle;
+                        BigDecimal remainingSubtotal = itemPrice.multiply(BigDecimal.valueOf(remainingQuantity));
+                        BigDecimal newItemSubtotal = itemPrice.multiply(BigDecimal.valueOf(remainingToToggle));
+                        
+                        // Update existing item
+                        item.setQuantity(remainingQuantity);
+                        item.setSubtotal(remainingSubtotal);
+                        // Keep original status
+                        
+                        // Create new item with toggled status
+                        OrderItem newItem = new OrderItem();
+                        newItem.setOrderId(item.getOrderId());
+                        newItem.setMenuId(item.getMenuId());
+                        newItem.setQuantity(remainingToToggle);
+                        newItem.setSubtotal(newItemSubtotal);
+                        newItem.setStatus(isActive);
+                        
+                        if (!orderitemDAO.updateOrderItem(item)) {
+                            allSuccess = false;
+                        } else if (!orderitemDAO.addOrderItem(newItem)) {
+                            allSuccess = false;
+                        }
+                        remainingToToggle = 0;
                     }
+                }
+                
+                if (allSuccess) {
+                    SceneNavigator.showInfo("Updated " + quantityToToggle + " item(s) to " + newStatus + "!");
+                    refreshCurrentOrder();
+                } else {
+                    SceneNavigator.showError("Failed to update some order items.");
                 }
             });
         });

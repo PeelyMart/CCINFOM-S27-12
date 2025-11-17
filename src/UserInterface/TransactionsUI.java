@@ -13,6 +13,8 @@ import javafx.scene.control.Button;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -38,6 +40,31 @@ public class TransactionsUI {
         }
 
         loadTablesFromDB();
+        
+        // Refresh buttons when scene becomes visible (using Platform.runLater to ensure scene is set)
+        javafx.application.Platform.runLater(() -> {
+            if (tableContainer != null && tableContainer.getScene() != null) {
+                tableContainer.getScene().windowProperty().addListener((obs, oldWindow, newWindow) -> {
+                    if (newWindow != null && newWindow instanceof Stage) {
+                        Stage stage = (Stage) newWindow;
+                        // Refresh when window is shown
+                        stage.setOnShown(e -> loadTablesFromDB());
+                    }
+                });
+                // Also set for current window if already set
+                if (tableContainer.getScene().getWindow() != null && tableContainer.getScene().getWindow() instanceof Stage) {
+                    Stage stage = (Stage) tableContainer.getScene().getWindow();
+                    stage.setOnShown(e -> loadTablesFromDB());
+                }
+            }
+        });
+    }
+    
+    /**
+     * Public method to refresh table buttons - can be called when returning to this screen
+     */
+    public void refreshTables() {
+        loadTablesFromDB();
     }
 
     private void loadTablesFromDB() {
@@ -47,9 +74,11 @@ public class TransactionsUI {
         Collections.sort(tables, Comparator.comparingInt(Table::getTableId));
         
         tableContainer.getChildren().clear();
-        // Force wrap at exactly 5 columns: 5 buttons * 60px + 4 gaps * 30px = 300 + 120 = 420px
+        // Force wrap at exactly 5 columns: 5 buttons * 90px + 4 gaps * 20px = 450 + 80 = 530px
         // Set both prefWidth and maxWidth to force wrapping at 5 columns
-        double wrapWidth = COLUMNS * 60 + (COLUMNS - 1) * 30; // 420px for exactly 5 columns with 30px gaps
+        double wrapWidth = COLUMNS * 90 + (COLUMNS - 1) * 20; // 530px for exactly 5 columns with 20px gaps
+        tableContainer.setHgap(20);
+        tableContainer.setVgap(20);
         tableContainer.setPrefWidth(wrapWidth);
         tableContainer.setMaxWidth(wrapWidth);
         
@@ -73,29 +102,28 @@ public class TransactionsUI {
 
         for (Table t : tables) {
             Button tableButton = new Button(String.valueOf(t.getTableId()));
-            tableButton.setPrefSize(60, 60);
-            tableButton.setMinSize(60, 60);
-            tableButton.setMaxSize(60, 60);
-            tableButton.setFont(javafx.scene.text.Font.font(16));
+            tableButton.setPrefSize(90, 90);
+            tableButton.setMinSize(90, 90);
+            tableButton.setMaxSize(90, 90);
+            tableButton.setFont(javafx.scene.text.Font.font(18));
+            tableButton.setWrapText(false);
 
-            // Check if table has an active order (OPEN status AND has active order items)
-            Order activeOrder = OrderDB.getWholeOrderByTable(t.getTableId());
-            boolean hasActiveOrder = false;
-            if (activeOrder != null && activeOrder.getStatus() == OrderStatus.OPEN) {
-                // Also check if it has active order items
-                if (activeOrder.getOrderItems() != null) {
-                    hasActiveOrder = activeOrder.getOrderItems().stream()
-                        .anyMatch(item -> item.getStatus() != null && item.getStatus());
-                }
+            // Check if table has an OPEN order (unavailable)
+            // Logic: IF TABLE HAS ORDER_ID with OPEN status = UNAVAILABLE = RED
+            //        IF TABLE HAS CLOSED ORDER/NO ACTIVE ORDER = AVAILABLE = GREEN
+            Order order = OrderDB.getWholeOrderByTable(t.getTableId());
+            boolean hasOpenOrder = false;
+            if (order != null && order.getStatus() == OrderStatus.OPEN) {
+                hasOpenOrder = true;
             }
             
-            // Red = has active order, Green = no active order (available)
-            if (hasActiveOrder) {
-                // Red = has active order
+            // Red = has OPEN order (unavailable), Green = CLOSED order or no order (available)
+            if (hasOpenOrder) {
+                // Red = has OPEN order (table is unavailable)
                 tableButton.setStyle("-fx-background-color: #f44336; -fx-text-fill: white; -fx-background-radius: 50; -fx-border-radius: 50; -fx-font-weight: bold;");
             } else {
-                // Green = no active order (available)
-                tableButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-background-radius: 50; -fx-border-radius: 50;");
+                // Green = CLOSED order or no order (table is available)
+                tableButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-background-radius: 50; -fx-border-radius: 50; -fx-font-weight: bold;");
             }
 
             tableButton.setOnAction(e -> handleTableClick(t));

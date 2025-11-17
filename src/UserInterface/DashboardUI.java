@@ -104,10 +104,11 @@ public class DashboardUI {
     @FXML
     private void handleLogout(ActionEvent event) {
         UserService.logOut();
-        // Navigate to logout screen
+        // Navigate to logout screen (switch to full scene, not just content area)
         try {
-            loadContent("/Resources/MainMenu/logout.fxml");
-        } catch (IOException e) {
+            Stage stage = (Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
+            SceneNavigator.switchNoButton(stage, "/Resources/MainMenu/logout.fxml", null);
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }

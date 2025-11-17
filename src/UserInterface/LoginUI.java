@@ -32,16 +32,25 @@ public class LoginUI {
             AnchorPane root = loader.load();
 
             LoginUI controller = loader.getController();
-            controller.mainStage = mainStage;
-
-            Stage loginStage = new Stage();
-            controller.loginStage = loginStage;
-
-            loginStage.setScene(new Scene(root));
-            loginStage.setTitle("Login");
-            loginStage.initModality(Modality.APPLICATION_MODAL); // modal popup
-            loginStage.setResizable(false);
-            loginStage.show();
+            
+            // If mainStage is provided, use it; otherwise create a new one
+            if (mainStage != null) {
+                controller.mainStage = mainStage;
+                // Use the existing stage (switch scene)
+                mainStage.setScene(new Scene(root));
+                mainStage.setTitle("Login");
+                mainStage.show();
+            } else {
+                // Create a new stage for login
+                controller.mainStage = new Stage();
+                Stage loginStage = new Stage();
+                controller.loginStage = loginStage;
+                loginStage.setScene(new Scene(root));
+                loginStage.setTitle("Login");
+                loginStage.initModality(Modality.APPLICATION_MODAL); // modal popup
+                loginStage.setResizable(false);
+                loginStage.show();
+            }
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -66,11 +75,20 @@ public class LoginUI {
         );
 
         if (resultFlag == 0) {
+            // Login successful
             if (loginStage != null) loginStage.close();
-
             DashboardUI.openDashboard(mainStage);
+        } else if (resultFlag == 1) {
+            // Incorrect username/user cannot be found
+            SceneNavigator.showError("Incorrect username or user cannot be found.");
+        } else if (resultFlag == 2) {
+            // Incorrect password
+            SceneNavigator.showError("Incorrect password.");
+        } else if (resultFlag == 999) {
+            // Input error
+            SceneNavigator.showError("Please enter valid Staff ID and Password (numbers only).");
         } else {
-            System.out.println("Login failed or input error");
+            SceneNavigator.showError("Login failed. Please try again.");
         }
     }
 

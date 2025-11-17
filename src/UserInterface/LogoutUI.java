@@ -24,13 +24,14 @@ public class LogoutUI {
     private void initialize() {
         // Display logout time
         LocalDateTime logoutTime = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("Logged out at: HH:mm:ss on MMM dd, yyyy");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("'Logged out at:' HH:mm:ss 'on' MMM dd, yyyy");
         logoutTimeField.setText(logoutTime.format(formatter));
 
         // Relogin button - go back to login screen
         reloginButton.setOnAction(e -> {
             Stage stage = (Stage) reloginButton.getScene().getWindow();
-            SceneNavigator.switchScene(reloginButton, "/Resources/LogIn/login.fxml");
+            // Close current stage and open login with the same stage
+            LoginUI.openLogin(stage);
         });
 
         // Exit button - close the application
